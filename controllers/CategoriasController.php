@@ -3,16 +3,16 @@
 namespace Controllers;
 
 use MVC\Router;
-use Model\Clientes;
+use Model\Categorias;
 
-class ClientesController extends AppController
+class CategoriasController extends AppController
 {
     public static function renderizarPagina(Router $router)
     {
-        $router->render('clientes/index', []);
+        $router->render('categorias/index', []);
     }
 
-    public static function guardarCliente()
+    public static function guardarCategoria()
     {
         try {
             self::validarMetodo('POST');
@@ -21,18 +21,14 @@ class ClientesController extends AppController
             // Debug
             error_log("POST recibido: " . json_encode($_POST));
 
-            // Crear cliente con los datos del POST
+            // Crear categoria con los datos del POST
             $datos = [
-                'nombres' => $_POST['nombres'] ?? '',
-                'apellidos' => $_POST['apellidos'] ?? '',
-                'telefono' => $_POST['telefono'] ?? '',
-                'correo' => $_POST['correo'] ?? '',
-                'direccion' => $_POST['direccion'] ?? '',
+                'nombre' => $_POST['nombre'] ?? '',
                 'situacion' => 1
             ];
 
-            $cliente = new Clientes($datos);
-            $resultado = $cliente->guardarCliente();
+            $categoria = new Categorias($datos);
+            $resultado = $categoria->guardarCategoria();
 
             // Debug
             error_log("Resultado guardado: " . json_encode($resultado));
@@ -40,10 +36,10 @@ class ClientesController extends AppController
             self::responderJson([
                 'tipo' => $resultado['exito'] ? 'success' : 'error',
                 'mensaje' => $resultado['mensaje'],
-                'cliente' => $resultado['exito'] ? $cliente : null
+                'categoria' => $resultado['exito'] ? $categoria : null
             ], $resultado['exito'] ? 200 : 400);
         } catch (\Exception $e) {
-            error_log("Error en guardarCliente controller: " . $e->getMessage());
+            error_log("Error en guardarCategoria controller: " . $e->getMessage());
             self::responderJson([
                 'tipo' => 'error',
                 'mensaje' => 'Error: ' . $e->getMessage()
@@ -51,18 +47,18 @@ class ClientesController extends AppController
         }
     }
 
-    public static function buscarCliente()
+    public static function buscarCategoria()
     {
         try {
             self::validarMetodo('GET');
             self::limpiarSalida();
 
-            $id = $_GET['id_cliente'] ?? null;
-            $cliente = Clientes::buscarPorId($id);
+            $id = $_GET['id_categoria'] ?? null;
+            $categoria = Categorias::buscarPorId($id);
 
             self::responderJson([
                 'tipo' => 'success',
-                'cliente' => $cliente
+                'categoria' => $categoria
             ]);
         } catch (\Exception $e) {
             self::responderJson([
@@ -72,18 +68,18 @@ class ClientesController extends AppController
         }
     }
 
-    public static function obtenerClientes()
+    public static function obtenerCategorias()
     {
         try {
             self::validarMetodo('GET');
             self::limpiarSalida();
 
-            $clientes = Clientes::obtenerTodos();
+            $categorias = Categorias::obtenerTodos();
 
             self::responderJson([
                 'tipo' => 'success',
-                'clientes' => $clientes ?: [],
-                'mensaje' => $clientes ? 'Clientes obtenidos correctamente' : 'No hay clientes registrados'
+                'categorias' => $categorias ?: [],
+                'mensaje' => $categorias ? 'categorias obtenidos correctamente' : 'No hay categorias registrados'
             ]);
         } catch (\Exception $e) {
             self::responderJson([
@@ -93,22 +89,22 @@ class ClientesController extends AppController
         }
     }
 
-    public static function modificarCliente()
+    public static function modificarCategoria()
     {
         try {
             self::validarMetodo('POST');
             self::limpiarSalida();
 
-            $id = $_POST['id_cliente'] ?? null;
-            $cliente = Clientes::buscarPorId($id);
-            $cliente->sincronizar($_POST);
+            $id = $_POST['id_categoria'] ?? null;
+            $categoria = Categorias::buscarPorId($id);
+            $categoria->sincronizar($_POST);
 
-            $resultado = $cliente->guardarCliente();
+            $resultado = $categoria->guardarCategoria();
 
             self::responderJson([
                 'tipo' => $resultado['exito'] ? 'success' : 'error',
                 'mensaje' => $resultado['mensaje'],
-                'cliente' => $resultado['exito'] ? $cliente : null
+                'categoria' => $resultado['exito'] ? $categoria : null
             ], $resultado['exito'] ? 200 : 400);
         } catch (\Exception $e) {
             self::responderJson([
@@ -118,16 +114,16 @@ class ClientesController extends AppController
         }
     }
 
-    public static function eliminarCliente()
+    public static function eliminarCategoria()
     {
         try {
             self::validarMetodo('POST');
             self::limpiarSalida();
 
-            $id = $_POST['id_cliente'] ?? null;
-            $cliente = Clientes::buscarPorId($id);
+            $id = $_POST['id_categoria'] ?? null;
+            $categoria = Categorias::buscarPorId($id);
 
-            $resultado = $cliente->eliminarCliente();
+            $resultado = $categoria->eliminarCategoria();
 
             self::responderJson([
                 'tipo' => $resultado['exito'] ? 'success' : 'error',
