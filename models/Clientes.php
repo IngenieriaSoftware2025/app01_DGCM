@@ -16,7 +16,7 @@ class Clientes extends ActiveRecord
         'direccion',
         'situacion'
     ];
-    
+
     // Propiedades de instancia
     public $id_cliente;
     public $nombres;
@@ -68,41 +68,53 @@ class Clientes extends ActiveRecord
         return self::$errores;
     }
 
-    // Métodos CRUD específicos
-    public function guardarCliente()
-{
-    try {
-        // Validar primero
-        $errores = $this->validar();
-        if (!empty($errores)) {
-            return [
-                'exito' => false,
-                'mensaje' => implode(', ', $errores)
-            ];
-        }
-
-        // Intentar crear/actualizar
-        $resultado = $this->id_cliente ? $this->actualizar() : $this->crear();
-
-        if (!$resultado) {
-            throw new \Exception('Error en la operación de base de datos');
-        }
-
+    protected function arrayAtributos()
+    {
         return [
-            'exito' => true,
-            'mensaje' => 'Cliente guardado correctamente',
-            'cliente' => $this
-        ];
-
-    } catch (\Exception $e) {
-        error_log("Error en guardarCliente: " . $e->getMessage());
-        return [
-            'exito' => false,
-            'mensaje' => 'Error al guardar el cliente',
-            'error' => $e->getMessage()
+            'id_cliente' => $this->id_cliente,
+            'nombres' => $this->nombres,
+            'apellidos' => $this->apellidos,
+            'telefono' => $this->telefono,
+            'correo' => $this->correo,
+            'direccion' => $this->direccion,
+            'situacion' => $this->situacion
         ];
     }
-}
+
+    // Métodos CRUD específicos
+    public function guardarCliente()
+    {
+        try {
+            // Validar primero
+            $errores = $this->validar();
+            if (!empty($errores)) {
+                return [
+                    'exito' => false,
+                    'mensaje' => implode(', ', $errores)
+                ];
+            }
+
+            // Intentar crear/actualizar
+            $resultado = $this->id_cliente ? $this->actualizar() : $this->crear();
+
+            if (!$resultado) {
+                throw new \Exception('Error en la operación de base de datos');
+            }
+
+            return [
+                'exito' => true,
+                'mensaje' => 'Cliente guardado correctamente',
+                'cliente' => $this->arrayAtributos()
+            ];
+        } catch (\Exception $e) {
+            error_log("Error en guardarCliente: " . $e->getMessage());
+            return [
+                'exito' => false,
+                'mensaje' => 'Error al guardar el cliente',
+                'error' => $e->getMessage()
+            ];
+        }
+    }
 
     public function eliminarCliente()
     {
@@ -110,7 +122,7 @@ class Clientes extends ActiveRecord
             $this->situacion = 0;
             $resultado = $this->guardar();
 
-            if ($resultado && (!isset($resultado['resultado']) || $resultado['resultado'])) {
+            if (($resultado['resultado']) ?? false) {
                 return [
                     'exito' => true,
                     'mensaje' => 'Cliente eliminado correctamente'
