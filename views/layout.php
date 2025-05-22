@@ -64,6 +64,19 @@
                         </ul>
                     </li>
 
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="/app01_DGCM/paquito" data-bs-toggle="dropdown">
+                            <i class="bi bi-cart-fill me-2"></i>Productos
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-dark">
+                            <li>
+                                <a class="dropdown-item" href="/app01_DGCM/paquito">
+                                    <i class="bi bi-plus-circle me-2"></i>Gestionar productos
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+
                 </ul>
                 <div class="d-grid">
                     <a href="/app01_DGCM" class="btn btn-danger"><i class="bi bi-arrow-bar-left"></i> MENÚ</a>

@@ -106,107 +106,170 @@ class ActiveRecord
     }
 
     // crea un nuevo registro - MODIFICADO PARA INFORMIX
-    public function crear()
-    {
+    // public function crear()
+    // {
+    //     // Sanitizar los datos
+    //     $atributos = $this->sanitizarAtributos();
+
+    //     // Preparar las columnas y valores para Informix
+    //     $columnas = array_keys($atributos);
+    //     $valores = array_values($atributos);
+
+    //     // Depurar los datos que estamos intentando insertar
+    //     error_log("Tabla: " . static::$tabla);
+    //     error_log("Columnas: " . json_encode($columnas));
+    //     error_log("Valores: " . json_encode($valores));
+
+    //     // Construimos la consulta con prepared statements para mayor seguridad y compatibilidad
+    //     $queryPrep = "INSERT INTO " . static::$tabla . " (";
+    //     $queryPrep .= implode(", ", $columnas);
+    //     $queryPrep .= ") VALUES (";
+
+    //     $placeholders = [];
+    //     foreach ($columnas as $col) {
+    //         $placeholders[] = "?";
+    //     }
+
+    //     $queryPrep .= implode(", ", $placeholders);
+    //     $queryPrep .= ")";
+
+    //     error_log("Consulta preparada: " . $queryPrep);
+
+    //     try {
+    //         // Preparar la consulta
+    //         $stmt = self::$db->prepare($queryPrep);
+
+    //         if (!$stmt) {
+    //             error_log("Error al preparar la consulta: " . json_encode(self::$db->errorInfo()));
+    //             return [
+    //                 'resultado' => false,
+    //                 'error' => "Error al preparar la consulta: " . json_encode(self::$db->errorInfo())
+    //             ];
+    //         }
+
+    //         // Extraer solo los valores sin comillas para los parámetros
+    //         $valoresClean = [];
+    //         foreach ($atributos as $key => $value) {
+    //             // Quitamos las comillas que añadió quote()
+    //             $valoresClean[] = trim($value, "'");
+    //         }
+
+    //         // Ejecutar con los valores como parámetros
+    //         $resultado = $stmt->execute($valoresClean);
+
+    //         if (!$resultado) {
+    //             error_log("Error al ejecutar: " . json_encode($stmt->errorInfo()));
+    //             return [
+    //                 'resultado' => false,
+    //                 'error' => json_encode($stmt->errorInfo())
+    //             ];
+    //         }
+
+    //         // Obtener el ID insertado
+    //         $id = null;
+    //         // Para Informix, usamos una consulta separada para obtener el último ID
+    //         try {
+    //             $idQuery = static::$idTabla ?? 'id';
+    //             $seqQuery = "SELECT FIRST 1 " . $idQuery . " FROM " . static::$tabla . " ORDER BY " . $idQuery . " DESC";
+    //             error_log("Consulta para obtener ID: " . $seqQuery);
+    //             $stmtId = self::$db->query($seqQuery);
+    //             if ($stmtId) {
+    //                 $lastRow = $stmtId->fetch(PDO::FETCH_ASSOC);
+    //                 $id = $lastRow[$idQuery] ?? null;
+    //                 error_log("ID obtenido: " . ($id ?? 'null'));
+    //             } else {
+    //                 error_log("Error al consultar ID: " . json_encode(self::$db->errorInfo()));
+    //             }
+    //         } catch (\Exception $idEx) {
+    //             error_log("Excepción al obtener ID: " . $idEx->getMessage());
+    //             // Continuamos aunque no podamos obtener el ID
+    //         }
+
+    //         return [
+    //             'resultado' => $resultado,
+    //             'id' => $id
+    //         ];
+    //     } catch (\PDOException $e) {
+    //         // Registrar el error para depuración
+    //         error_log("Error SQL en crear(): " . $e->getMessage());
+    //         error_log("Error código: " . $e->getCode());
+    //         error_log("Error info: " . json_encode(self::$db->errorInfo()));
+
+    //         return [
+    //             'resultado' => false,
+    //             'error' => $e->getMessage()
+    //         ];
+    //     } catch (\Exception $e) {
+    //         error_log("Excepción general en crear(): " . $e->getMessage());
+    //         return [
+    //             'resultado' => false,
+    //             'error' => $e->getMessage()
+    //         ];
+    //     }
+    // }
+
+public function crear()
+{
+    try {
         // Sanitizar los datos
-        $atributos = $this->sanitizarAtributos();
+        $atributos = $this->atributos();
 
-        // Preparar las columnas y valores para Informix
-        $columnas = array_keys($atributos);
-        $valores = array_values($atributos);
+        // Filtrar nulls y el id
+        $atributosFiltrados = array_filter($atributos, function($value, $key) {
+            return $value !== null && $key !== static::$idTabla;
+        }, ARRAY_FILTER_USE_BOTH);
 
-        // Depurar los datos que estamos intentando insertar
-        error_log("Tabla: " . static::$tabla);
-        error_log("Columnas: " . json_encode($columnas));
+        // Preparar consulta
+        $columnas = array_keys($atributosFiltrados);
+        $placeholders = array_fill(0, count($atributosFiltrados), '?');
+        
+        $query = "INSERT INTO " . static::$tabla . " (";
+        $query .= join(', ', $columnas);
+        $query .= ") VALUES (";
+        $query .= join(', ', $placeholders);
+        $query .= ")";
+
+        // Preparar valores asegurando tipos correctos
+        $valores = [];
+        foreach ($atributosFiltrados as $campo => $valor) {
+            if (is_bool($valor)) {
+                $valores[] = (int)$valor;
+            } else if (in_array($campo, ['cantidad', 'id_categoria', 'id_prioridad', 'comprado', 'situacion'])) {
+                $valores[] = (int)$valor;
+            } else {
+                $valores[] = $valor;
+            }
+        }
+
+        error_log("Query: " . $query);
         error_log("Valores: " . json_encode($valores));
 
-        // Construimos la consulta con prepared statements para mayor seguridad y compatibilidad
-        $queryPrep = "INSERT INTO " . static::$tabla . " (";
-        $queryPrep .= implode(", ", $columnas);
-        $queryPrep .= ") VALUES (";
-
-        $placeholders = [];
-        foreach ($columnas as $col) {
-            $placeholders[] = "?";
+        // Ejecutar
+        $stmt = self::$db->prepare($query);
+        if (!$stmt) {
+            throw new \Exception("Error preparando la consulta");
         }
 
-        $queryPrep .= implode(", ", $placeholders);
-        $queryPrep .= ")";
-
-        error_log("Consulta preparada: " . $queryPrep);
-
-        try {
-            // Preparar la consulta
-            $stmt = self::$db->prepare($queryPrep);
-
-            if (!$stmt) {
-                error_log("Error al preparar la consulta: " . json_encode(self::$db->errorInfo()));
-                return [
-                    'resultado' => false,
-                    'error' => "Error al preparar la consulta: " . json_encode(self::$db->errorInfo())
-                ];
-            }
-
-            // Extraer solo los valores sin comillas para los parámetros
-            $valoresClean = [];
-            foreach ($atributos as $key => $value) {
-                // Quitamos las comillas que añadió quote()
-                $valoresClean[] = trim($value, "'");
-            }
-
-            // Ejecutar con los valores como parámetros
-            $resultado = $stmt->execute($valoresClean);
-
-            if (!$resultado) {
-                error_log("Error al ejecutar: " . json_encode($stmt->errorInfo()));
-                return [
-                    'resultado' => false,
-                    'error' => json_encode($stmt->errorInfo())
-                ];
-            }
-
-            // Obtener el ID insertado
-            $id = null;
-            // Para Informix, usamos una consulta separada para obtener el último ID
-            try {
-                $idQuery = static::$idTabla ?? 'id';
-                $seqQuery = "SELECT FIRST 1 " . $idQuery . " FROM " . static::$tabla . " ORDER BY " . $idQuery . " DESC";
-                error_log("Consulta para obtener ID: " . $seqQuery);
-                $stmtId = self::$db->query($seqQuery);
-                if ($stmtId) {
-                    $lastRow = $stmtId->fetch(PDO::FETCH_ASSOC);
-                    $id = $lastRow[$idQuery] ?? null;
-                    error_log("ID obtenido: " . ($id ?? 'null'));
-                } else {
-                    error_log("Error al consultar ID: " . json_encode(self::$db->errorInfo()));
-                }
-            } catch (\Exception $idEx) {
-                error_log("Excepción al obtener ID: " . $idEx->getMessage());
-                // Continuamos aunque no podamos obtener el ID
-            }
-
-            return [
-                'resultado' => $resultado,
-                'id' => $id
-            ];
-        } catch (\PDOException $e) {
-            // Registrar el error para depuración
-            error_log("Error SQL en crear(): " . $e->getMessage());
-            error_log("Error código: " . $e->getCode());
-            error_log("Error info: " . json_encode(self::$db->errorInfo()));
-
-            return [
-                'resultado' => false,
-                'error' => $e->getMessage()
-            ];
-        } catch (\Exception $e) {
-            error_log("Excepción general en crear(): " . $e->getMessage());
-            return [
-                'resultado' => false,
-                'error' => $e->getMessage()
-            ];
+        $resultado = $stmt->execute($valores);
+        if (!$resultado) {
+            throw new \Exception(json_encode($stmt->errorInfo()));
         }
+
+        // Obtener ID insertado
+        $idInsertado = self::$db->lastInsertId();
+        if ($idInsertado) {
+            $this->{static::$idTabla} = $idInsertado;
+        }
+
+        return $resultado;
+
+    } catch (\Exception $e) {
+        error_log("Error en crear(): " . $e->getMessage());
+        return false;
     }
+}
+
+
 
     public function actualizar()
     {
