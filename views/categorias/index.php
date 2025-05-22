@@ -18,7 +18,7 @@
                                 </label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="bi bi-tag-fill"></i></span>
-                                    <input type="text" class="form-control" id="nombre" name="nombre" placeholder="Ej: Juan Carlos" required>
+                                    <input type="text" class="form-control" id="nombre" name="nombre" placeholder="Ej: Linea blanca" required>
                                 </div>
                             </div>
 

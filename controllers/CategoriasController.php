@@ -78,7 +78,7 @@ class CategoriasController extends AppController
 
             self::responderJson([
                 'tipo' => 'success',
-                'categorias' => $categorias ?: [],
+                'categoria' => $categorias ?: [],
                 'mensaje' => $categorias ? 'categorias obtenidos correctamente' : 'No hay categorias registrados'
             ]);
         } catch (\Exception $e) {
