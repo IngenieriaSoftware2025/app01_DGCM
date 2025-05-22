@@ -1,15 +1,14 @@
-console.log('Hola desde clientes/index.js');
+console.log('Hola desde prioridades/index.js');
 
 import Swal from "sweetalert2";
 import DataTable from "datatables.net-bs5";
 import { lenguaje } from "../lenguaje.js";
 import { Dropdown } from 'bootstrap'; 
 
-const FormClientes = document.getElementById("FormClientes");
+const FormPrioridades = document.getElementById("FormPrioridades");
 const btnGuardar = document.getElementById("btnGuardar");
 const btnModificar = document.getElementById("btnModificar");
 const btnLimpiar = document.getElementById("btnLimpiar");
-
 
 // Helpers 
 const estadoBoton = (btn, disabled) => {
@@ -17,6 +16,7 @@ const estadoBoton = (btn, disabled) => {
         btn.disabled = disabled;
     }
 }
+
 const apiFetch = async (url, { method = 'GET', body = null } = {}) => {
     const resp = await fetch(url, {
         method,
@@ -38,31 +38,22 @@ const apiFetch = async (url, { method = 'GET', body = null } = {}) => {
     return data;
 };
 
-
 // Reglas
 const camposObligatorios = {
-    nombres: 'El nombre es obligatorio',
-    apellidos: 'El apellido es obligatorio',
-    telefono: 'El teléfono es obligatorio',
-    correo: 'El correo es obligatorio',
-    direccion: 'La dirección es obligatoria'
+    nombre: 'El nombre de la prioridad es obligatorio'
 };
 
-
 const reglasEspecificas = {
-    telefono: {
-        test: v => /^\d{8}$/.test(v),
-        msg: 'El teléfono debe tener 8 dígitos'
-    },
-    correo: {
-        test: v => /^[\w.-]+@[\w-]+\.\w{2,4}$/.test(v),
-        msg: 'El correo no es válido'
+    nombre: {
+        evaluar: v => v.length >= 3 && v.length <= 50,
+        msg: 'El nombre debe tener entre 3 y 50 caracteres'
     }
 };
 
-const validarDatos = (form) => {
+const validarDatos = (formData) => {
     const errores = [];
-    const datos = Object.fromEntries(form);
+    const datos = Object.fromEntries(formData);
+    console.log('Datos a validar:', datos);
 
     for (const [campo, mensaje] of Object.entries(camposObligatorios)) {
         if (!datos[campo] || datos[campo].trim() === '') {
@@ -71,7 +62,7 @@ const validarDatos = (form) => {
     }
 
     for (const [campo, regla] of Object.entries(reglasEspecificas)) {
-        if (datos[campo] && !regla.test(datos[campo])) {
+        if (datos[campo] && !regla.evaluar(datos[campo])) {
             errores.push(regla.msg);
         }
     }
@@ -89,15 +80,15 @@ const mostrarAlerta = async (tipo, titulo, mensaje) => {
 }
 
 const limpiarFormulario = () => {
-    FormClientes.reset();
+    FormPrioridades.reset();
 }
 
-const guardarCliente = async (e) => {
+const guardarPrioridad = async (e) => {
     e.preventDefault();
     estadoBoton(btnGuardar, true);
 
     try {
-        const formData = new FormData(FormClientes);
+        const formData = new FormData(FormPrioridades);
         const errores = validarDatos(formData);
 
         if (errores.length) {
@@ -105,14 +96,14 @@ const guardarCliente = async (e) => {
             return;
         }
 
-        const data = await apiFetch('/app01_DGCM/clientes/guardarCliente', {
+        const data = await apiFetch('/app01_DGCM/prioridades/guardarPrioridad', {
             method: 'POST',
             body: formData
         });
 
         await mostrarAlerta('success', 'Éxito', data.mensaje);
         limpiarFormulario();
-        await cargarClientes();
+        await cargarPrioridades();
 
     } catch (err) {
         console.error(err);
@@ -122,29 +113,25 @@ const guardarCliente = async (e) => {
     }
 };
 
-const tablaClientes = new DataTable('#tablaClientes', {
+const tablaPrioridades = new DataTable('#tablaPrioridades', {
     language: lenguaje,
     dom: 'Bfrtip',
     columns: [
         {
             title: '#',
-            data: 'id_cliente',
+            data: 'id_prioridad',
             render: (data, type, row, meta) => meta.row + 1
         },
-        { title: 'Nombres', data: 'nombres' },
-        { title: 'Apellidos', data: 'apellidos' },
-        { title: 'Teléfono', data: 'telefono' },
-        { title: 'Correo', data: 'correo' },
-        { title: 'Dirección', data: 'direccion' },
+        { title: 'Nombre', data: 'nombre' },
         {
             title: 'Acciones',
             data: null,
             render: (data, type, row) => `
                 <div class="d-flex justify-content-center">
-                    <button class="btn btn-warning btn-editar me-2" data-id="${row.id_cliente}">
+                    <button class="btn btn-warning btn-editar me-2" data-id="${row.id_prioridad}">
                         <i class="bi bi-pencil-fill"></i>
                     </button>
-                    <button class="btn btn-danger btn-eliminar" data-id="${row.id_cliente}">
+                    <button class="btn btn-danger btn-eliminar" data-id="${row.id_prioridad}">
                         <i class="bi bi-trash-fill"></i>
                     </button>
                 </div>
@@ -153,13 +140,13 @@ const tablaClientes = new DataTable('#tablaClientes', {
     ]
 });
 
-const cargarClientes = async () => {
+const cargarPrioridades = async () => {
     try {
-        const { clientes } = await apiFetch('/app01_DGCM/clientes/obtenerClientes');
-        tablaClientes.clear().rows.add(clientes).draw();
+        const { prioridades } = await apiFetch('/app01_DGCM/prioridades/obtenerPrioridades');
+        tablaPrioridades.clear().rows.add(prioridades).draw();
 
-        if (!clientes.length) {
-            await mostrarAlerta('info', 'Información', 'No hay clientes registrados');
+        if (!prioridades.length) {
+            await mostrarAlerta('info', 'Información', 'No hay prioridades registradas');
         }
 
     } catch (err) {
@@ -168,19 +155,18 @@ const cargarClientes = async () => {
     }
 };
 
-
 const llenarFormulario = async (event) => {
     const id = event.currentTarget.dataset.id;   
 
     try {
-        const { cliente } = await apiFetch(
-            `/app01_DGCM/clientes/buscarCliente?id_cliente=${id}`
+        const { prioridad } = await apiFetch(
+            `/app01_DGCM/prioridades/buscarPrioridad?id_prioridad=${id}`
         );
 
-        ['id_cliente', 'nombres', 'apellidos', 'telefono', 'correo', 'direccion']
+        ['id_prioridad', 'nombre']
             .forEach(campo => {
                 const input = document.getElementById(campo);
-                if (input) input.value = cliente[campo] ?? '';
+                if (input) input.value = prioridad[campo] ?? '';
             });
 
         btnGuardar.classList.add('d-none');
@@ -192,13 +178,12 @@ const llenarFormulario = async (event) => {
     }
 };
 
-
-const modificarCliente = async (e) => {
+const modificarPrioridad = async (e) => {
     e.preventDefault();
     estadoBoton(btnModificar, true);    
 
     try {
-        const formData = new FormData(FormClientes);
+        const formData = new FormData(FormPrioridades);
         const errores = validarDatos(formData);
 
         if (errores.length) {
@@ -206,14 +191,14 @@ const modificarCliente = async (e) => {
             return;
         }
 
-        const data = await apiFetch('/app01_DGCM/clientes/modificarCliente', {
+        const data = await apiFetch('/app01_DGCM/prioridades/modificarPrioridad', {
             method: 'POST',
             body: formData
         });
 
         await mostrarAlerta('success', 'Éxito', data.mensaje);
         limpiarFormulario();
-        await cargarClientes();
+        await cargarPrioridades();
 
         btnGuardar.classList.remove('d-none');
         btnModificar.classList.add('d-none');
@@ -226,16 +211,16 @@ const modificarCliente = async (e) => {
     }
 };
 
-const eliminarCliente = async (event) => {
+const eliminarPrioridad = async (event) => {
     const btn = event.currentTarget;
     const id = btn.dataset.id;
-    const row = tablaClientes.row(btn.closest('tr')).data();  
-    const nombreCompleto = `${row.nombres} ${row.apellidos}`;
+    const row = tablaPrioridades.row(btn.closest('tr')).data();  
+    const nombre = `${row.nombre}`;
 
     const { isConfirmed } = await Swal.fire({
         icon: 'warning',
         title: '¿Estás seguro?',
-        html: `Esta acción eliminará al cliente:<br><strong>${nombreCompleto}</strong>`,
+        html: `Esta acción eliminará la prioridad:<br><strong>${nombre}</strong>`,
         showCancelButton: true,
         confirmButtonText: 'Sí, eliminar',
         cancelButtonText: 'Cancelar',
@@ -246,16 +231,16 @@ const eliminarCliente = async (event) => {
     if (!isConfirmed) return;
 
     const formData = new FormData();
-    formData.append('id_cliente', id);
+    formData.append('id_prioridad', id);
 
     try {
-        await apiFetch('/app01_DGCM/clientes/eliminarCliente', {
+        await apiFetch('/app01_DGCM/prioridades/eliminarPrioridad', {
             method: 'POST',
             body: formData
         });
 
-        await mostrarAlerta('success', 'Éxito', 'Cliente eliminado correctamente');
-        await cargarClientes();  
+        await mostrarAlerta('success', 'Éxito', 'Prioridad eliminada correctamente');
+        await cargarPrioridades();  
 
     } catch (err) {
         console.error(err);
@@ -263,14 +248,14 @@ const eliminarCliente = async (event) => {
     }
 };
 
-tablaClientes.on('click', '.btn-editar', llenarFormulario);
-tablaClientes.on('click', '.btn-eliminar', eliminarCliente);
-btnModificar.addEventListener('click', modificarCliente);
-FormClientes.addEventListener('submit', guardarCliente);
+tablaPrioridades.on('click', '.btn-editar', llenarFormulario);
+tablaPrioridades.on('click', '.btn-eliminar', eliminarPrioridad);
+btnModificar.addEventListener('click', modificarPrioridad);
+FormPrioridades.addEventListener('submit', guardarPrioridad);
 btnLimpiar.addEventListener('click', () => {
-    FormClientes.reset();
+    FormPrioridades.reset();
     btnGuardar.classList.remove('d-none');
     btnModificar.classList.add('d-none');
 });
 
-document.addEventListener('DOMContentLoaded', cargarClientes);
+document.addEventListener('DOMContentLoaded', cargarPrioridades);

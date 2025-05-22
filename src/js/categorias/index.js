@@ -3,12 +3,12 @@ console.log('Hola desde categoria/index.js');
 import Swal from "sweetalert2";
 import DataTable from "datatables.net-bs5";
 import { lenguaje } from "../lenguaje.js";
+import { Dropdown } from 'bootstrap';
 
 const FormCategorias = document.getElementById("FormCategorias");
 const btnGuardar = document.getElementById("btnGuardar");
 const btnModificar = document.getElementById("btnModificar");
 const btnLimpiar = document.getElementById("btnLimpiar");
-
 
 // Helpers 
 const estadoBoton = (btn, disabled) => {
@@ -157,7 +157,7 @@ const cargarCategorias = async () => {
 };
 
 const llenarFormulario = async (event) => {
-    const id = event.currentTarget.dataset.id;   
+    const id = event.currentTarget.dataset.id;
 
     try {
         const { categoria } = await apiFetch(
@@ -182,7 +182,7 @@ const llenarFormulario = async (event) => {
 
 const modificarCategoria = async (e) => {
     e.preventDefault();
-    estadoBoton(btnModificar, true);    
+    estadoBoton(btnModificar, true);
 
     try {
         const formData = new FormData(FormCategorias);
@@ -209,14 +209,14 @@ const modificarCategoria = async (e) => {
         console.error(err);
         await mostrarAlerta('error', 'Error', err.message);
     } finally {
-        estadoBoton(btnModificar, false);   
+        estadoBoton(btnModificar, false);
     }
 };
 
 const eliminarCategoria = async (event) => {
     const btn = event.currentTarget;
     const id = btn.dataset.id;
-    const row = tablaCategorias.row(btn.closest('tr')).data();  
+    const row = tablaCategorias.row(btn.closest('tr')).data();
     const nombre = `${row.nombre}`;
 
     const { isConfirmed } = await Swal.fire({
@@ -242,7 +242,7 @@ const eliminarCategoria = async (event) => {
         });
 
         await mostrarAlerta('success', 'Éxito', 'Categoria eliminada correctamente');
-        await cargarCategorias();  
+        await cargarCategorias();
 
     } catch (err) {
         console.error(err);

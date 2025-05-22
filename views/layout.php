@@ -26,7 +26,7 @@
                         <a class="nav-link" href="/app01_DGCM"><i class="bi bi-house-fill me-2"></i>Inicio</a>
                     </li>
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                        <a class="nav-link dropdown-toggle" href="/app01_DGCM/guardaBosques" data-bs-toggle="dropdown">
                             <i class="bi bi-gear me-2"></i>Clientes
                         </a>
                         <ul class="dropdown-menu dropdown-menu-dark">
@@ -39,7 +39,7 @@
                     </li>
 
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                        <a class="nav-link dropdown-toggle" href="/app01_DGCM/patitos" data-bs-toggle="dropdown">
                             <i class="bi bi-tags-fill me-2"></i>Categorías
                         </a>
                         <ul class="dropdown-menu dropdown-menu-dark">
@@ -50,6 +50,20 @@
                             </li>
                         </ul>
                     </li>
+
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="/app01_DGCM/charquitos" data-bs-toggle="dropdown">
+                            <i class="bi bi-flag-fill me-2"></i>Prioridades
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-dark">
+                            <li>
+                                <a class="dropdown-item" href="/app01_DGCM/charquitos">
+                                    <i class="bi bi-plus-circle me-2"></i>Crear prioridades
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+
                 </ul>
                 <div class="d-grid">
                     <a href="/app01_DGCM" class="btn btn-danger"><i class="bi bi-arrow-bar-left"></i> MENÚ</a>
