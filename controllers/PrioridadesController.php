@@ -21,7 +21,6 @@ class PrioridadesController extends AppController
             // Debug
             error_log("POST recibido: " . json_encode($_POST));
 
-            // Crear prioridad con los datos del POST
             $datos = [
                 'nombre' => $_POST['nombre'] ?? '',
                 'situacion' => 1
@@ -74,12 +73,15 @@ class PrioridadesController extends AppController
             self::validarMetodo('GET');
             self::limpiarSalida();
 
-            $prioridades = Prioridades::obtenerTodos();
+            // Sólo activas
+            $prioridades = Prioridades::obtenerActivas();
 
             self::responderJson([
                 'tipo' => 'success',
                 'prioridades' => $prioridades ?: [],
-                'mensaje' => $prioridades ? 'Prioridades obtenidas correctamente' : 'No hay prioridades registradas'
+                'mensaje' => $prioridades
+                    ? 'Prioridades obtenidas correctamente'
+                    : 'No hay prioridades registradas'
             ]);
         } catch (\Exception $e) {
             self::responderJson([
@@ -120,20 +122,39 @@ class PrioridadesController extends AppController
             self::validarMetodo('POST');
             self::limpiarSalida();
 
-            $id = $_POST['id_prioridad'] ?? null;
+            $id        = $_POST['id_prioridad'] ?? null;
             $prioridad = Prioridades::buscarPorId($id);
 
-            $resultado = $prioridad->eliminarPrioridad();
+            $filas = Prioridades::consultarSQL(
+                "SELECT COUNT(*) AS cnt
+             FROM productos
+             WHERE id_prioridad = " . (int)$id . "
+               AND situacion = 1"
+            );
+
+            $count = 0;
+            if (!empty($filas)) {
+                $first = $filas[0];
+                $count = is_object($first)
+                    ? ($first->cnt  ?? 0)
+                    : ($first['cnt'] ?? 0);
+            }
+
+            if ($count > 0) {
+                throw new \Exception('No se puede eliminar: hay productos asignados a esta prioridad');
+            }
+
+            $res = $prioridad->eliminarPrioridad();
 
             self::responderJson([
-                'tipo' => $resultado['exito'] ? 'success' : 'error',
-                'mensaje' => $resultado['mensaje']
-            ], $resultado['exito'] ? 200 : 400);
+                'tipo'    => $res['exito'] ? 'success' : 'error',
+                'mensaje' => $res['mensaje']
+            ], $res['exito'] ? 200 : 400);
         } catch (\Exception $e) {
             self::responderJson([
-                'tipo' => 'error',
-                'mensaje' => 'Error: ' . $e->getMessage()
-            ], 500);
+                'tipo'    => 'error',
+                'mensaje' => $e->getMessage()
+            ], 400);
         }
     }
 }

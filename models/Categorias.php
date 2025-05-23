@@ -89,23 +89,29 @@ class Categorias extends ActiveRecord
     public function eliminarCategoria()
     {
         try {
+            // borrado lógico
             $this->situacion = 0;
-            $resultado = $this->guardar();
 
-            if (($resultado['resultado']) ?? false) {
-                return [
-                    'exito' => true,
-                    'mensaje' => 'Categoría eliminada correctamente'
-                ];
+            $resultado = $this->guardarCategoria();
+
+            if ($resultado['exito']) {
+                return ['exito' => true, 'mensaje' => 'Categoría eliminada correctamente'];
             }
-
-            throw new \Exception($resultado['error'] ?? 'Error al eliminar la categoría');
+            return ['exito' => false, 'mensaje' => $resultado['mensaje']];
         } catch (\Exception $e) {
-            return [
-                'exito' => false,
-                'mensaje' => $e->getMessage()
-            ];
+            return ['exito' => false, 'mensaje' => $e->getMessage()];
         }
+    }
+
+    public static function obtenerActivas()
+    {
+        $sql = "SELECT * FROM categorias WHERE situacion = 1";
+        $filas = static::consultarSQL($sql);
+        $lista = [];
+        foreach ($filas as $fila) {
+            $lista[] = new self((array)$fila);
+        }
+        return $lista;
     }
 
     public static function buscarPorId($id)

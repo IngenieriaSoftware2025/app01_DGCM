@@ -11,28 +11,20 @@ const btnModificar = document.getElementById("btnModificar");
 const btnLimpiar = document.getElementById("btnLimpiar");
 const selectCategoria = document.getElementById("id_categoria");
 const selectPrioridad = document.getElementById("id_prioridad");
+const resumenProductos = document.getElementById("resumenProductos");
 
-// Helpers 
+// Helpers
 const estadoBoton = (btn, disabled) => {
-    if (btn) {
-        btn.disabled = disabled;
-    }
-}
+    if (btn) btn.disabled = disabled;
+};
 
 const apiFetch = async (url, { method = 'GET', body = null } = {}) => {
-    const resp = await fetch(url, {
-        method,
-        body,
-        headers: { 'Accept': 'application/json' }
-    });
-
+    const resp = await fetch(url, { method, body, headers: { 'Accept': 'application/json' } });
     const raw = await resp.text();
     if (!raw.trim()) throw new Error('Respuesta vacía del servidor');
-
     let data;
     try { data = JSON.parse(raw); }
     catch { throw new Error('La respuesta no es JSON válido'); }
-
     if (data.tipo !== 'success') {
         const msg = data.mensaje || 'Error desconocido';
         throw new Error(msg);
@@ -40,84 +32,147 @@ const apiFetch = async (url, { method = 'GET', body = null } = {}) => {
     return data;
 };
 
-// Cargar selectores
-const cargarCategorias = async () => {
-    try {
-        const { categoria } = await apiFetch('/app01_DGCM/categorias/obtenerCategorias');
-        selectCategoria.innerHTML = '<option value="">Seleccione una categoría</option>';
-        categoria.forEach(cat => {
-            selectCategoria.innerHTML += `<option value="${cat.id_categoria}">${cat.nombre}</option>`;
-        });
-    } catch (err) {
-        console.error('Error al cargar categorías:', err);
-    }
-};
-
-const cargarPrioridades = async () => {
-    try {
-        const { prioridades } = await apiFetch('/app01_DGCM/prioridades/obtenerPrioridades');
-        selectPrioridad.innerHTML = '<option value="">Seleccione una prioridad</option>';
-        prioridades.forEach(pri => {
-            selectPrioridad.innerHTML += `<option value="${pri.id_prioridad}">${pri.nombre}</option>`;
-        });
-    } catch (err) {
-        console.error('Error al cargar prioridades:', err);
-    }
-};
-
-// Reglas
+// Reglas de validación
 const camposObligatorios = {
     nombre: 'El nombre del producto es obligatorio',
     cantidad: 'La cantidad es obligatoria',
-    id_categoria: 'La categoría es obligatoria',
-    id_prioridad: 'La prioridad es obligatoria'
+    id_categoria: 'Debe seleccionar una categoría',
+    id_prioridad: 'Debe seleccionar una prioridad'
 };
-
 const reglasEspecificas = {
-    nombre: {
-        evaluar: v => v.length >= 3 && v.length <= 100,
-        msg: 'El nombre debe tener entre 3 y 100 caracteres'
-    },
     cantidad: {
-        evaluar: v => v > 0 && Number.isInteger(Number(v)),
-        msg: 'La cantidad debe ser un número entero positivo'
+        evaluar: v => !isNaN(v) && Number(v) >= 1,
+        msg: 'La cantidad debe ser un número mayor o igual a 1'
     }
 };
 
-const validarDatos = (formData) => {
+const validarDatos = formData => {
     const errores = [];
     const datos = Object.fromEntries(formData);
-
-    for (const [campo, mensaje] of Object.entries(camposObligatorios)) {
-        if (!datos[campo] || datos[campo].trim() === '') {
-            errores.push(mensaje);
+    // Obligatorios
+    for (const [campo, msg] of Object.entries(camposObligatorios)) {
+        if (!datos[campo] || datos[campo].toString().trim() === '') {
+            errores.push(msg);
         }
     }
-
+    // Específicas
     for (const [campo, regla] of Object.entries(reglasEspecificas)) {
         if (datos[campo] && !regla.evaluar(datos[campo])) {
             errores.push(regla.msg);
         }
     }
-
     return errores;
 };
 
-const mostrarAlerta = async (tipo, titulo, mensaje) => {
-    return await Swal.fire({
-        icon: tipo,
-        title: titulo,
-        text: mensaje,
-        confirmButtonText: 'Aceptar'
-    });
-}
+const mostrarAlerta = async (icon, title, text) => {
+    return await Swal.fire({ icon, title, text, confirmButtonText: 'Aceptar' });
+};
 
 const limpiarFormulario = () => {
     FormProductos.reset();
-}
+};
 
-// CRUD
-const guardarProducto = async (e) => {
+// DataTables
+const tablaPendientes = new DataTable('#tablaProductos', {
+    language: lenguaje,
+    dom: 'Bfrtip',
+    columns: [
+        { title: '#', data: 'id_producto', render: (_, __, ___, meta) => meta.row + 1 },
+        { title: 'Producto', data: 'nombre' },
+        { title: 'Cantidad', data: 'cantidad' },
+        { title: 'Categoría', data: 'categoria_nombre' },
+        { title: 'Prioridad', data: 'prioridad_nombre' },
+        {
+            title: 'Acciones',
+            data: null,
+            render: row => `
+                <div class="d-flex justify-content-center">
+                <button class="btn btn-success btn-comprar me-2" data-id="${row.id_producto}" title="Marcar comprado">
+                    <i class="bi bi-check-circle-fill"></i>
+                </button>
+                <button class="btn btn-warning btn-editar me-2" data-id="${row.id_producto}" title="Editar">
+                    <i class="bi bi-pencil-fill"></i>
+                </button>
+                <button class="btn btn-danger btn-eliminar" data-id="${row.id_producto}" title="Eliminar">
+                    <i class="bi bi-trash-fill"></i>
+                </button>
+                </div>`
+        }
+    ]
+});
+
+const tablaComprados = new DataTable('#tablaProductosComprados', {
+    language: lenguaje,
+    dom: 'Bfrtip',
+    columns: [
+        { title: '#', data: 'id_producto', render: (_, __, ___, meta) => meta.row + 1 },
+        { title: 'Producto', data: 'nombre' },
+        { title: 'Cantidad', data: 'cantidad' },
+        { title: 'Categoría', data: 'categoria_nombre' },
+        { title: 'Prioridad', data: 'prioridad_nombre' },
+        {
+            title: 'Acciones',
+            data: null,
+            render: row => `
+                <div class="d-flex justify-content-center">
+                    <button class="btn btn-secondary btn-pendiente me-2" data-id="${row.id_producto}" title="Marcar como pendiente">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                    </button>
+                    <button class="btn btn-danger btn-eliminar" data-id="${row.id_producto}" title="Eliminar">
+                        <i class="bi bi-trash-fill"></i>
+                    </button>
+                </div>`
+        }
+    ]
+});
+
+// Carga de selects
+const cargarCategorias = async () => {
+    const { categoria } = await apiFetch('/app01_DGCM/categorias/obtenerCategorias');
+    selectCategoria.innerHTML = `
+        <option value="">Seleccione una categoría</option>
+        ${categoria.map(c => `<option value="${c.id_categoria}">${c.nombre}</option>`).join('')}
+    `;
+};
+const cargarPrioridades = async () => {
+    const { prioridades } = await apiFetch('/app01_DGCM/prioridades/obtenerPrioridades');
+    selectPrioridad.innerHTML = `
+        <option value="">Seleccione una prioridad</option>
+        ${prioridades.map(p => `<option value="${p.id_prioridad}">${p.nombre}</option>`).join('')}
+    `;
+};
+
+let productosPendientes = [], productosComprados = [];
+
+const cargarProductos = async () => {
+    const { productos } = await apiFetch('/app01_DGCM/productos/obtenerProductos');
+    productosPendientes = productos.filter(p => p.comprado == 0);
+    productosComprados = productos.filter(p => p.comprado == 1);
+
+    tablaPendientes.clear().rows.add(productosPendientes).draw();
+    tablaComprados.clear().rows.add(productosComprados).draw();
+
+    resumenProductos.textContent = `
+        Pendientes: ${productosPendientes.length} —
+        Comprados: ${productosComprados.length}
+    `;
+};
+
+// Llenar formulario para editar
+const llenarFormulario = async event => {
+    const id = event.currentTarget.dataset.id;
+    const { producto } = await apiFetch(
+        `/app01_DGCM/productos/buscarProducto?id_producto=${id}`
+    );
+    ['id_producto', 'nombre', 'cantidad', 'id_categoria', 'id_prioridad']
+        .forEach(f => document.getElementById(f).value = producto[f] ?? '');
+
+    btnGuardar.classList.add('d-none');
+    btnModificar.classList.remove('d-none');
+};
+
+// Guardar producto
+const guardarProducto = async e => {
     e.preventDefault();
     estadoBoton(btnGuardar, true);
 
@@ -130,15 +185,14 @@ const guardarProducto = async (e) => {
             return;
         }
 
-        const data = await apiFetch('/app01_DGCM/productos/guardarProducto', {
+        const { mensaje } = await apiFetch('/app01_DGCM/productos/guardarProducto', {
             method: 'POST',
             body: formData
         });
 
-        await mostrarAlerta('success', 'Éxito', data.mensaje);
+        await mostrarAlerta('success', 'Éxito', mensaje);
         limpiarFormulario();
         await cargarProductos();
-
     } catch (err) {
         console.error(err);
         await mostrarAlerta('error', 'Error', err.message);
@@ -147,94 +201,8 @@ const guardarProducto = async (e) => {
     }
 };
 
-const tablaProductos = new DataTable('#tablaProductos', {
-    language: lenguaje,
-    dom: 'Bfrtip',
-    order: [[2, 'asc'], [3, 'desc']], // Ordenar por categoría y luego por prioridad
-    columns: [
-        {
-            title: '#',
-            data: 'id_producto',
-            render: (data, type, row, meta) => meta.row + 1
-        },
-        { title: 'Nombre', data: 'nombre' },
-        { title: 'Cantidad', data: 'cantidad' },
-        { title: 'Categoría', data: 'categoria_nombre' },
-        { title: 'Prioridad', data: 'prioridad_nombre' },
-        {
-            title: 'Estado',
-            data: 'comprado',
-            render: (data) => `
-                <span class="badge ${data ? 'bg-success' : 'bg-warning'}">
-                    ${data ? 'Comprado' : 'Pendiente'}
-                </span>
-            `
-        },
-        {
-            title: 'Acciones',
-            data: null,
-            render: (data, type, row) => `
-                <div class="d-flex justify-content-center">
-                    <button class="btn btn-warning btn-editar me-2" data-id="${row.id_producto}">
-                        <i class="bi bi-pencil-fill"></i>
-                    </button>
-                    <button class="btn btn-danger btn-eliminar me-2" data-id="${row.id_producto}">
-                        <i class="bi bi-trash-fill"></i>
-                    </button>
-                    <button class="btn ${row.comprado ? 'btn-secondary' : 'btn-success'} btn-comprado" 
-                            data-id="${row.id_producto}" data-estado="${row.comprado}">
-                        <i class="bi ${row.comprado ? 'bi-x-lg' : 'bi-check-lg'}"></i>
-                    </button>
-                </div>
-            `
-        }
-    ],
-    rowCallback: function (row, data) {
-        if (data.comprado) {
-            row.classList.add('text-decoration-line-through', 'text-muted');
-        }
-    }
-});
-
-const cargarProductos = async () => {
-    try {
-        const { productos } = await apiFetch('/app01_DGCM/productos/obtenerProductos');
-        tablaProductos.clear().rows.add(productos).draw();
-
-        if (!productos.length) {
-            await mostrarAlerta('info', 'Información', 'No hay productos registrados');
-        }
-
-    } catch (err) {
-        console.error(err);
-        await mostrarAlerta('error', 'Error', err.message);
-    }
-};
-
-const llenarFormulario = async (event) => {
-    const id = event.currentTarget.dataset.id;
-
-    try {
-        const { producto } = await apiFetch(
-            `/app01_DGCM/productos/buscarProducto?id_producto=${id}`
-        );
-
-        ['id_producto', 'nombre', 'cantidad', 'id_categoria', 'id_prioridad']
-            .forEach(campo => {
-                const input = document.getElementById(campo);
-                if (input) input.value = producto[campo] ?? '';
-            });
-
-        btnGuardar.classList.add('d-none');
-        btnModificar.classList.remove('d-none');
-
-    } catch (err) {
-        console.error(err);
-        await mostrarAlerta('error', 'Error', err.message);
-    }
-};
-
-const modificarProducto = async (e) => {
+// Modificar producto
+const modificarProducto = async e => {
     e.preventDefault();
     estadoBoton(btnModificar, true);
 
@@ -247,18 +215,16 @@ const modificarProducto = async (e) => {
             return;
         }
 
-        const data = await apiFetch('/app01_DGCM/productos/modificarProducto', {
+        const { mensaje } = await apiFetch('/app01_DGCM/productos/modificarProducto', {
             method: 'POST',
             body: formData
         });
 
-        await mostrarAlerta('success', 'Éxito', data.mensaje);
+        await mostrarAlerta('success', 'Éxito', mensaje);
         limpiarFormulario();
-        await cargarProductos();
-
         btnGuardar.classList.remove('d-none');
         btnModificar.classList.add('d-none');
-
+        await cargarProductos();
     } catch (err) {
         console.error(err);
         await mostrarAlerta('error', 'Error', err.message);
@@ -267,84 +233,115 @@ const modificarProducto = async (e) => {
     }
 };
 
-const eliminarProducto = async (event) => {
+// Eliminar o marcar comprado
+const eliminarProducto = async event => {
     const btn = event.currentTarget;
     const id = btn.dataset.id;
-    const row = tablaProductos.row(btn.closest('tr')).data();
-    const nombre = row.nombre;
+    const fila = btn.closest('table').id === 'tablaProductos'
+        ? tablaPendientes.row(btn.closest('tr')).data()
+        : tablaComprados.row(btn.closest('tr')).data();
+
+    const texto = fila.comprado == 0
+        ? `marcar como comprado: "${fila.nombre}"?`
+        : `eliminar definitivamente: "${fila.nombre}"?`;
 
     const { isConfirmed } = await Swal.fire({
         icon: 'warning',
         title: '¿Estás seguro?',
-        html: `Esta acción eliminará el producto:<br><strong>${nombre}</strong>`,
+        html: `¿Deseas ${texto}`,
         showCancelButton: true,
         confirmButtonText: 'Sí, eliminar',
-        cancelButtonText: 'Cancelar',
-        confirmButtonColor: '#dc3545',
-        cancelButtonColor: '#6c757d'
+        cancelButtonText: 'Cancelar'
     });
-
     if (!isConfirmed) return;
 
     const formData = new FormData();
     formData.append('id_producto', id);
 
-    try {
-        await apiFetch('/app01_DGCM/productos/eliminarProducto', {
-            method: 'POST',
-            body: formData
-        });
+    await apiFetch('/app01_DGCM/productos/eliminarProducto', {
+        method: 'POST',
+        body: formData
+    });
 
-        await mostrarAlerta('success', 'Éxito', 'Producto eliminado correctamente');
-        await cargarProductos();
-
-    } catch (err) {
-        console.error(err);
-        await mostrarAlerta('error', 'Error', err.message);
-    }
+    await mostrarAlerta('success', 'Éxito',
+        fila.comprado == 0
+            ? 'Producto marcado como comprado'
+            : 'Producto eliminado correctamente'
+    );
+    await cargarProductos();
 };
 
-const marcarComprado = async (event) => {
-    const btn = event.currentTarget;
-    const id = btn.dataset.id;
-    const estadoActual = btn.dataset.estado === "1";
-    const nuevoEstado = !estadoActual;
 
-    const formData = new FormData();
-    formData.append('id_producto', id);
-    formData.append('comprado', nuevoEstado ? 1 : 0);
+const comprarProducto = async e => {
+    const id = e.currentTarget.dataset.id;
+    const { isConfirmed } = await Swal.fire({
+        icon: 'question',
+        title: 'Marcar como comprado',
+        text: '¿Confirmas que ya compraste este producto?',
+        showCancelButton: true,
+        confirmButtonText: 'Sí',
+        cancelButtonText: 'No'
+    });
+    if (!isConfirmed) return;
 
-    try {
-        await apiFetch('/app01_DGCM/productos/marcarComprado', {
-            method: 'POST',
-            body: formData
-        });
+    const fd = new FormData();
+    fd.append('id_producto', id);
+    fd.append('comprado', 1);
 
-        await cargarProductos();
-
-    } catch (err) {
-        console.error(err);
-        await mostrarAlerta('error', 'Error', err.message);
-    }
+    await apiFetch('/app01_DGCM/productos/modificarProducto', {
+        method: 'POST',
+        body: fd
+    });
+    await mostrarAlerta('success', 'Éxito', 'Producto marcado como comprado');
+    await cargarProductos();
 };
 
-// Listeners
-tablaProductos.on('click', '.btn-editar', llenarFormulario);
-tablaProductos.on('click', '.btn-eliminar', eliminarProducto);
-tablaProductos.on('click', '.btn-comprado', marcarComprado);
-btnModificar.addEventListener('click', modificarProducto);
-FormProductos.addEventListener('submit', guardarProducto);
-btnLimpiar.addEventListener('click', () => {
-    FormProductos.reset();
-    btnGuardar.classList.remove('d-none');
-    btnModificar.classList.add('d-none');
-});
+const revertirApendiente = async e => {
+    const id = e.currentTarget.dataset.id;
+    const { isConfirmed } = await Swal.fire({
+        icon: 'question',
+        title: 'Marcar como pendiente',
+        text: '¿Quieres devolver este producto a pendientes?',
+        showCancelButton: true,
+        confirmButtonText: 'Sí',
+        cancelButtonText: 'No'
+    });
+    if (!isConfirmed) return;
 
-// Inicialización
+    const fd = new FormData();
+    fd.append('id_producto', id);
+    fd.append('comprado', 0);
+
+    await apiFetch('/app01_DGCM/productos/modificarProducto', {
+        method: 'POST',
+        body: fd
+    });
+    await mostrarAlerta('success', 'Éxito', 'Producto marcado como pendiente');
+    await cargarProductos();
+};
+
+
+
+// Eventos
 document.addEventListener('DOMContentLoaded', async () => {
     await Promise.all([
         cargarCategorias(),
         cargarPrioridades(),
         cargarProductos()
     ]);
+    FormProductos.addEventListener('submit', guardarProducto);
+    btnModificar.addEventListener('click', modificarProducto);
+    btnLimpiar.addEventListener('click', () => {
+        limpiarFormulario();
+        btnGuardar.classList.remove('d-none');
+        btnModificar.classList.add('d-none');
+    });
+    tablaPendientes.on('click', '.btn-editar', llenarFormulario);
+    tablaPendientes.on('click', '.btn-eliminar', eliminarProducto);
+    tablaComprados.on('click', '.btn-eliminar', eliminarProducto);
+
+    tablaPendientes.on('click', '.btn-comprar', comprarProducto);
+    tablaComprados.on('click', '.btn-pendiente', revertirApendiente);
+
+
 });

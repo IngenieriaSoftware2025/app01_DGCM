@@ -106,6 +106,18 @@
 
                     <div class="tab-content">
                         <div class="tab-pane fade show active" id="pendientes">
+
+                            <div class="row mb-3">
+                                <div class="col">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <h5 class="card-title">Estado de Productos</h5>
+                                            <p id="resumenProductos" class="mb-0">Cargando...</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
                             <div class="table-responsive">
                                 <table class="table table-striped table-hover table-bordered w-100 table-sm"
                                     id="tablaProductos">

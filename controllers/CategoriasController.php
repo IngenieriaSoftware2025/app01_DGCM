@@ -67,19 +67,21 @@ class CategoriasController extends AppController
             ], 404);
         }
     }
-
     public static function obtenerCategorias()
     {
         try {
             self::validarMetodo('GET');
             self::limpiarSalida();
 
-            $categorias = Categorias::obtenerTodos();
+            // Sólo activas
+            $categorias = Categorias::obtenerActivas();
 
             self::responderJson([
                 'tipo' => 'success',
                 'categoria' => $categorias ?: [],
-                'mensaje' => $categorias ? 'categorias obtenidos correctamente' : 'No hay categorias registrados'
+                'mensaje' => $categorias
+                    ? 'Categorias obtenidas correctamente'
+                    : 'No hay categorias registradas'
             ]);
         } catch (\Exception $e) {
             self::responderJson([
@@ -88,6 +90,7 @@ class CategoriasController extends AppController
             ], 500);
         }
     }
+
 
     public static function modificarCategoria()
     {
@@ -120,20 +123,39 @@ class CategoriasController extends AppController
             self::validarMetodo('POST');
             self::limpiarSalida();
 
-            $id = $_POST['id_categoria'] ?? null;
+            $id        = $_POST['id_categoria'] ?? null;
             $categoria = Categorias::buscarPorId($id);
 
-            $resultado = $categoria->eliminarCategoria();
+            $filas = Categorias::consultarSQL(
+                "SELECT COUNT(*) AS cnt
+                 FROM productos
+                 WHERE id_categoria = " . (int)$id . "
+                   AND situacion    = 1"
+            );
+
+            $count = 0;
+            if (!empty($filas)) {
+                $first = $filas[0];
+                $count = is_object($first)
+                    ? ($first->cnt  ?? 0)
+                    : ($first['cnt'] ?? 0);
+            }
+
+            if ($count > 0) {
+                throw new \Exception('No se puede eliminar: hay productos asignados a esta categoría');
+            }
+
+            $res = $categoria->eliminarCategoria();
 
             self::responderJson([
-                'tipo' => $resultado['exito'] ? 'success' : 'error',
-                'mensaje' => $resultado['mensaje']
-            ], $resultado['exito'] ? 200 : 400);
+                'tipo'    => $res['exito'] ? 'success' : 'error',
+                'mensaje' => $res['mensaje']
+            ], $res['exito'] ? 200 : 400);
         } catch (\Exception $e) {
             self::responderJson([
-                'tipo' => 'error',
-                'mensaje' => 'Error: ' . $e->getMessage()
-            ], 500);
+                'tipo'    => 'error',
+                'mensaje' => $e->getMessage()
+            ], 400);
         }
     }
 }

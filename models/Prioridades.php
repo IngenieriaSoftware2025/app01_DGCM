@@ -86,27 +86,26 @@ class Prioridades extends ActiveRecord
         }
     }
 
+
     public function eliminarPrioridad()
     {
         try {
+            // borrado lógico
             $this->situacion = 0;
-            $resultado = $this->guardar();
 
-            if (($resultado['resultado']) ?? false) {
-                return [
-                    'exito' => true,
-                    'mensaje' => 'Prioridad eliminada correctamente'
-                ];
+            $resultado = $this->guardarPrioridad();
+
+            if ($resultado['exito']) {
+                return ['exito' => true, 'mensaje' => 'Prioridad eliminada correctamente'];
             }
-
-            throw new \Exception($resultado['error'] ?? 'Error al eliminar la prioridad');
+            return ['exito' => false, 'mensaje' => $resultado['mensaje']];
         } catch (\Exception $e) {
-            return [
-                'exito' => false,
-                'mensaje' => $e->getMessage()
-            ];
+            return ['exito' => false, 'mensaje' => $e->getMessage()];
         }
     }
+
+
+
 
     public static function buscarPorId($id)
     {
@@ -124,5 +123,16 @@ class Prioridades extends ActiveRecord
     public static function obtenerTodos()
     {
         return static::all();
+    }
+
+    public static function obtenerActivas()
+    {
+        $sql = "SELECT * FROM prioridades WHERE situacion = 1";
+        $filas = static::consultarSQL($sql);
+        $lista = [];
+        foreach ($filas as $fila) {
+            $lista[] = new self((array)$fila);
+        }
+        return $lista;
     }
 }

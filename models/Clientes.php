@@ -36,7 +36,6 @@ class Clientes extends ActiveRecord
         }
     }
 
-    // Método principal de validación
     public function validar()
     {
         self::$errores = [];
@@ -81,7 +80,6 @@ class Clientes extends ActiveRecord
         ];
     }
 
-    // Métodos CRUD específicos
     public function guardarCliente()
     {
         try {

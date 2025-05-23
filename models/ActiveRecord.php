@@ -6,6 +6,7 @@ use PDO;
 
 class ActiveRecord
 {
+
     // Base DE DATOS
     protected static $db;
     protected static $tabla = '';
@@ -55,11 +56,14 @@ class ActiveRecord
 
     public static function all()
     {
-        $query = "SELECT * FROM " . static::$tabla . " WHERE situacion = 1";
-        return static::consultarSQL($query);
+        $query = "SELECT * FROM " . static::$tabla;
+        $resultado = self::consultarSQL($query);
+
+        // debuguear($resultado);
+        return $resultado;
     }
 
-    // Busca un registro por su id
+    // // Busca un registro por su id
     public static function find($id = [])
     {
         $idQuery = static::$idTabla ?? 'id';
@@ -74,6 +78,7 @@ class ActiveRecord
                 }
             }
         } else {
+
             $query .= " WHERE $idQuery = $id";
         }
 
@@ -105,171 +110,30 @@ class ActiveRecord
         return $resultado;
     }
 
-    // crea un nuevo registro - MODIFICADO PARA INFORMIX
-    // public function crear()
-    // {
-    //     // Sanitizar los datos
-    //     $atributos = $this->sanitizarAtributos();
-
-    //     // Preparar las columnas y valores para Informix
-    //     $columnas = array_keys($atributos);
-    //     $valores = array_values($atributos);
-
-    //     // Depurar los datos que estamos intentando insertar
-    //     error_log("Tabla: " . static::$tabla);
-    //     error_log("Columnas: " . json_encode($columnas));
-    //     error_log("Valores: " . json_encode($valores));
-
-    //     // Construimos la consulta con prepared statements para mayor seguridad y compatibilidad
-    //     $queryPrep = "INSERT INTO " . static::$tabla . " (";
-    //     $queryPrep .= implode(", ", $columnas);
-    //     $queryPrep .= ") VALUES (";
-
-    //     $placeholders = [];
-    //     foreach ($columnas as $col) {
-    //         $placeholders[] = "?";
-    //     }
-
-    //     $queryPrep .= implode(", ", $placeholders);
-    //     $queryPrep .= ")";
-
-    //     error_log("Consulta preparada: " . $queryPrep);
-
-    //     try {
-    //         // Preparar la consulta
-    //         $stmt = self::$db->prepare($queryPrep);
-
-    //         if (!$stmt) {
-    //             error_log("Error al preparar la consulta: " . json_encode(self::$db->errorInfo()));
-    //             return [
-    //                 'resultado' => false,
-    //                 'error' => "Error al preparar la consulta: " . json_encode(self::$db->errorInfo())
-    //             ];
-    //         }
-
-    //         // Extraer solo los valores sin comillas para los parámetros
-    //         $valoresClean = [];
-    //         foreach ($atributos as $key => $value) {
-    //             // Quitamos las comillas que añadió quote()
-    //             $valoresClean[] = trim($value, "'");
-    //         }
-
-    //         // Ejecutar con los valores como parámetros
-    //         $resultado = $stmt->execute($valoresClean);
-
-    //         if (!$resultado) {
-    //             error_log("Error al ejecutar: " . json_encode($stmt->errorInfo()));
-    //             return [
-    //                 'resultado' => false,
-    //                 'error' => json_encode($stmt->errorInfo())
-    //             ];
-    //         }
-
-    //         // Obtener el ID insertado
-    //         $id = null;
-    //         // Para Informix, usamos una consulta separada para obtener el último ID
-    //         try {
-    //             $idQuery = static::$idTabla ?? 'id';
-    //             $seqQuery = "SELECT FIRST 1 " . $idQuery . " FROM " . static::$tabla . " ORDER BY " . $idQuery . " DESC";
-    //             error_log("Consulta para obtener ID: " . $seqQuery);
-    //             $stmtId = self::$db->query($seqQuery);
-    //             if ($stmtId) {
-    //                 $lastRow = $stmtId->fetch(PDO::FETCH_ASSOC);
-    //                 $id = $lastRow[$idQuery] ?? null;
-    //                 error_log("ID obtenido: " . ($id ?? 'null'));
-    //             } else {
-    //                 error_log("Error al consultar ID: " . json_encode(self::$db->errorInfo()));
-    //             }
-    //         } catch (\Exception $idEx) {
-    //             error_log("Excepción al obtener ID: " . $idEx->getMessage());
-    //             // Continuamos aunque no podamos obtener el ID
-    //         }
-
-    //         return [
-    //             'resultado' => $resultado,
-    //             'id' => $id
-    //         ];
-    //     } catch (\PDOException $e) {
-    //         // Registrar el error para depuración
-    //         error_log("Error SQL en crear(): " . $e->getMessage());
-    //         error_log("Error código: " . $e->getCode());
-    //         error_log("Error info: " . json_encode(self::$db->errorInfo()));
-
-    //         return [
-    //             'resultado' => false,
-    //             'error' => $e->getMessage()
-    //         ];
-    //     } catch (\Exception $e) {
-    //         error_log("Excepción general en crear(): " . $e->getMessage());
-    //         return [
-    //             'resultado' => false,
-    //             'error' => $e->getMessage()
-    //         ];
-    //     }
-    // }
-
-public function crear()
-{
-    try {
+    // crea un nuevo registro
+    public function crear()
+    {
         // Sanitizar los datos
-        $atributos = $this->atributos();
+        $atributos = $this->sanitizarAtributos();
 
-        // Filtrar nulls y el id
-        $atributosFiltrados = array_filter($atributos, function($value, $key) {
-            return $value !== null && $key !== static::$idTabla;
-        }, ARRAY_FILTER_USE_BOTH);
+        // Insertar en la base de datos
+        $query = " INSERT INTO " . static::$tabla . " ( ";
+        $query .= join(', ', array_keys($atributos));
+        $query .= " ) VALUES (";
+        $query .= join(", ", array_values($atributos));
+        $query .= " ) ";
 
-        // Preparar consulta
-        $columnas = array_keys($atributosFiltrados);
-        $placeholders = array_fill(0, count($atributosFiltrados), '?');
-        
-        $query = "INSERT INTO " . static::$tabla . " (";
-        $query .= join(', ', $columnas);
-        $query .= ") VALUES (";
-        $query .= join(', ', $placeholders);
-        $query .= ")";
 
-        // Preparar valores asegurando tipos correctos
-        $valores = [];
-        foreach ($atributosFiltrados as $campo => $valor) {
-            if (is_bool($valor)) {
-                $valores[] = (int)$valor;
-            } else if (in_array($campo, ['cantidad', 'id_categoria', 'id_prioridad', 'comprado', 'situacion'])) {
-                $valores[] = (int)$valor;
-            } else {
-                $valores[] = $valor;
-            }
-        }
+        // debuguear($query);
 
-        error_log("Query: " . $query);
-        error_log("Valores: " . json_encode($valores));
+        // Resultado de la consulta
+        $resultado = self::$db->exec($query);
 
-        // Ejecutar
-        $stmt = self::$db->prepare($query);
-        if (!$stmt) {
-            throw new \Exception("Error preparando la consulta");
-        }
-
-        $resultado = $stmt->execute($valores);
-        if (!$resultado) {
-            throw new \Exception(json_encode($stmt->errorInfo()));
-        }
-
-        // Obtener ID insertado
-        $idInsertado = self::$db->lastInsertId();
-        if ($idInsertado) {
-            $this->{static::$idTabla} = $idInsertado;
-        }
-
-        return $resultado;
-
-    } catch (\Exception $e) {
-        error_log("Error en crear(): " . $e->getMessage());
-        return false;
+        return [
+            'resultado' =>  $resultado,
+            'id' => self::$db->lastInsertId(static::$tabla)
+        ];
     }
-}
-
-
 
     public function actualizar()
     {
@@ -287,6 +151,7 @@ public function crear()
         $query .=  join(', ', $valores);
 
         if (is_array(static::$idTabla)) {
+
             foreach (static::$idTabla as $key => $value) {
                 if ($value == reset(static::$idTabla)) {
                     $query .= " WHERE $value = " . self::$db->quote($this->$value);
@@ -298,22 +163,14 @@ public function crear()
             $query .= " WHERE " . $id . " = " . self::$db->quote($this->$id) . " ";
         }
 
-        try {
-            $resultado = self::$db->exec($query);
-            return [
-                'resultado' =>  $resultado,
-            ];
-        } catch (\PDOException $e) {
-            // Registrar el error para depuración
-            error_log("Error SQL en actualizar(): " . $e->getMessage());
-            error_log("Consulta: " . $query);
+        // debuguear($query);
 
-            return [
-                'resultado' => false,
-                'error' => $e->getMessage()
-            ];
-        }
+        $resultado = self::$db->exec($query);
+        return [
+            'resultado' =>  $resultado,
+        ];
     }
+
 
     // Eliminar un registro - Toma el ID de Active Record
     public function eliminar()
@@ -324,62 +181,47 @@ public function crear()
         return $resultado;
     }
 
+
     public static function consultarSQL($query)
     {
-        try {
-            // Consultar la base de datos
-            $resultado = self::$db->query($query);
+        // Consultar la base de datos
+        $resultado = self::$db->query($query);
 
-            // Iterar los resultados
-            $array = [];
-            while ($registro = $resultado->fetch(PDO::FETCH_ASSOC)) {
-                $array[] = static::crearObjeto($registro);
-            }
-
-            // liberar la memoria
-            $resultado->closeCursor();
-
-            // retornar los resultados
-            return $array;
-        } catch (\PDOException $e) {
-            error_log("Error en consultarSQL: " . $e->getMessage());
-            error_log("Consulta: " . $query);
-            return [];
+        // Iterar los resultados
+        $array = [];
+        while ($registro = $resultado->fetch(PDO::FETCH_ASSOC)) {
+            $array[] = static::crearObjeto($registro);
         }
+
+        // liberar la memoria
+        $resultado->closeCursor();
+
+        // retornar los resultados
+        return $array;
     }
 
     public static function fetchArray($query)
     {
-        try {
-            $resultado = self::$db->query($query);
-            $respuesta = $resultado->fetchAll(PDO::FETCH_ASSOC);
-            $data = [];
-            foreach ($respuesta as $value) {
-                $data[] = array_change_key_case(array_map('utf8_encode', $value));
-            }
-            $resultado->closeCursor();
-            return $data;
-        } catch (\PDOException $e) {
-            error_log("Error en fetchArray: " . $e->getMessage());
-            return [];
+        $resultado = self::$db->query($query);
+        $respuesta = $resultado->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($respuesta as $value) {
+            $data[] = array_change_key_case(array_map('utf8_encode', $value));
         }
+        $resultado->closeCursor();
+        return $data;
     }
+
 
     public static function fetchFirst($query)
     {
-        try {
-            $resultado = self::$db->query($query);
-            $respuesta = $resultado->fetchAll(PDO::FETCH_ASSOC);
-            $data = [];
-            foreach ($respuesta as $value) {
-                $data[] = array_change_key_case(array_map('utf8_encode', $value));
-            }
-            $resultado->closeCursor();
-            return array_shift($data);
-        } catch (\PDOException $e) {
-            error_log("Error en fetchFirst: " . $e->getMessage());
-            return null;
+        $resultado = self::$db->query($query);
+        $respuesta = $resultado->fetchAll(PDO::FETCH_ASSOC);
+        $data = [];
+        foreach ($respuesta as $value) {
+            $data[] = array_change_key_case(array_map('utf8_encode', $value));
         }
+        $resultado->closeCursor();
+        return array_shift($data);
     }
 
     protected static function crearObjeto($registro)
@@ -395,6 +237,8 @@ public function crear()
 
         return $objeto;
     }
+
+
 
     // Identificar y unir los atributos de la BD
     public function atributos()

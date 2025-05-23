@@ -21,7 +21,6 @@ class ClientesController extends AppController
             // Debug
             error_log("POST recibido: " . json_encode($_POST));
 
-            // Crear cliente con los datos del POST
             $datos = [
                 'nombres' => $_POST['nombres'] ?? '',
                 'apellidos' => $_POST['apellidos'] ?? '',
