@@ -11,7 +11,11 @@ const btnModificar = document.getElementById("btnModificar");
 const btnLimpiar = document.getElementById("btnLimpiar");
 const selectCategoria = document.getElementById("id_categoria");
 const selectPrioridad = document.getElementById("id_prioridad");
+const selectCliente = document.getElementById("id_cliente");
 const resumenProductos = document.getElementById("resumenProductos");
+const prioridadRank = { 'Alta': 3, 'Media': 2, 'Baja': 1 };
+
+
 
 // Helpers
 const estadoBoton = (btn, disabled) => {
@@ -37,7 +41,8 @@ const camposObligatorios = {
     nombre: 'El nombre del producto es obligatorio',
     cantidad: 'La cantidad es obligatoria',
     id_categoria: 'Debe seleccionar una categoría',
-    id_prioridad: 'Debe seleccionar una prioridad'
+    id_prioridad: 'Debe seleccionar una prioridad',
+    id_cliente: 'Debe seleccionar un cliente'
 };
 const reglasEspecificas = {
     cantidad: {
@@ -76,27 +81,67 @@ const limpiarFormulario = () => {
 const tablaPendientes = new DataTable('#tablaProductos', {
     language: lenguaje,
     dom: 'Bfrtip',
+
+    rowGroup: {
+        dataSrc: 'categoria_nombre'
+    },
+
+    order: [
+        [3, 'asc'],
+        [4, 'desc']
+    ],
+
+    columnDefs: [
+        {
+            targets: 4,
+            render: (data, type) => {
+                if (type === 'sort') {
+                    return prioridadRank[data] || 0;
+                }
+                let clase;
+                switch (data) {
+                    case 'Alta': clase = 'bg-danger text-white'; break;
+                    case 'Media': clase = 'bg-warning text-dark'; break;
+                    case 'Baja': clase = 'bg-success text-white'; break;
+                    default: clase = 'bg-secondary text-white';
+                }
+                return `<span class="badge ${clase}">${data}</span>`;
+            }
+        }
+    ],
+
     columns: [
-        { title: '#', data: 'id_producto', render: (_, __, ___, meta) => meta.row + 1 },
+        {
+            title: '#',
+            data: 'id_producto',
+            render: (_, __, ___, meta) => meta.row + 1
+        },
         { title: 'Producto', data: 'nombre' },
         { title: 'Cantidad', data: 'cantidad' },
         { title: 'Categoría', data: 'categoria_nombre' },
         { title: 'Prioridad', data: 'prioridad_nombre' },
+        { title: 'Cliente', data: 'cliente_nombre' },
         {
             title: 'Acciones',
             data: null,
             render: row => `
-                <div class="d-flex justify-content-center">
-                <button class="btn btn-success btn-comprar me-2" data-id="${row.id_producto}" title="Marcar comprado">
-                    <i class="bi bi-check-circle-fill"></i>
-                </button>
-                <button class="btn btn-warning btn-editar me-2" data-id="${row.id_producto}" title="Editar">
-                    <i class="bi bi-pencil-fill"></i>
-                </button>
-                <button class="btn btn-danger btn-eliminar" data-id="${row.id_producto}" title="Eliminar">
-                    <i class="bi bi-trash-fill"></i>
-                </button>
-                </div>`
+        <div class="d-flex justify-content-center">
+          <button class="btn btn-success btn-comprar me-2"
+                  data-id="${row.id_producto}"
+                  title="Marcar comprado">
+            <i class="bi bi-check-circle-fill"></i>
+          </button>
+          <button class="btn btn-warning btn-editar me-2"
+                  data-id="${row.id_producto}"
+                  title="Editar">
+            <i class="bi bi-pencil-fill"></i>
+          </button>
+          <button class="btn btn-danger btn-eliminar"
+                  data-id="${row.id_producto}"
+                  title="Eliminar">
+            <i class="bi bi-trash-fill"></i>
+          </button>
+        </div>`
         }
     ]
 });
@@ -104,42 +149,90 @@ const tablaPendientes = new DataTable('#tablaProductos', {
 const tablaComprados = new DataTable('#tablaProductosComprados', {
     language: lenguaje,
     dom: 'Bfrtip',
+
+    rowGroup: {
+        dataSrc: 'categoria_nombre'
+    },
+
+    order: [
+        [3, 'asc'],
+        [4, 'desc']
+    ],
+
+    columnDefs: [
+        {
+            targets: 4, 
+            render: (data, type) => {
+                if (type === 'sort') {
+                    return prioridadRank[data] || 0;
+                }
+                let clase;
+                switch (data) {
+                    case 'Alta': clase = 'bg-danger text-white'; break;
+                    case 'Media': clase = 'bg-warning text-dark'; break;
+                    case 'Baja': clase = 'bg-success text-white'; break;
+                    default: clase = 'bg-secondary text-white';
+                }
+                return `<span class="badge ${clase}">${data}</span>`;
+            }
+        }
+    ],
+
     columns: [
-        { title: '#', data: 'id_producto', render: (_, __, ___, meta) => meta.row + 1 },
+        {
+            title: '#',
+            data: 'id_producto',
+            render: (_, __, ___, meta) => meta.row + 1
+        },
         { title: 'Producto', data: 'nombre' },
         { title: 'Cantidad', data: 'cantidad' },
         { title: 'Categoría', data: 'categoria_nombre' },
         { title: 'Prioridad', data: 'prioridad_nombre' },
+        { title: 'Cliente', data: 'cliente_nombre' },
         {
             title: 'Acciones',
             data: null,
             render: row => `
-                <div class="d-flex justify-content-center">
-                    <button class="btn btn-secondary btn-pendiente me-2" data-id="${row.id_producto}" title="Marcar como pendiente">
-                        <i class="bi bi-arrow-counterclockwise"></i>
-                    </button>
-                    <button class="btn btn-danger btn-eliminar" data-id="${row.id_producto}" title="Eliminar">
-                        <i class="bi bi-trash-fill"></i>
-                    </button>
-                </div>`
+        <div class="d-flex justify-content-center">
+          <button class="btn btn-secondary btn-pendiente me-2"
+                  data-id="${row.id_producto}"
+                  title="Marcar como pendiente">
+            <i class="bi bi-arrow-counterclockwise"></i>
+          </button>
+          <button class="btn btn-danger btn-eliminar"
+                  data-id="${row.id_producto}"
+                  title="Eliminar">
+            <i class="bi bi-trash-fill"></i>
+          </button>
+        </div>`
         }
     ]
 });
 
+
 // Carga de selects
 const cargarCategorias = async () => {
-    const { categoria } = await apiFetch('/app01_DGCM/categorias/obtenerCategorias');
+    const { categorias } = await apiFetch('/app01_DGCM/categorias/obtenerCategorias');
     selectCategoria.innerHTML = `
         <option value="">Seleccione una categoría</option>
-        ${categoria.map(c => `<option value="${c.id_categoria}">${c.nombre}</option>`).join('')}
+        ${categorias.map(c => `<option value="${c.id_categoria}">${c.nombre}</option>`).join('')}
     `;
 };
+
 const cargarPrioridades = async () => {
     const { prioridades } = await apiFetch('/app01_DGCM/prioridades/obtenerPrioridades');
     selectPrioridad.innerHTML = `
         <option value="">Seleccione una prioridad</option>
         ${prioridades.map(p => `<option value="${p.id_prioridad}">${p.nombre}</option>`).join('')}
     `;
+};
+
+const cargarClientes = async () => {
+    const { clientes } = await apiFetch('/app01_DGCM/clientes/obtenerClientes');
+    document.getElementById('id_cliente').innerHTML = `
+    <option value="">Seleccione un cliente</option>
+    ${clientes.map(c => `<option value="${c.id_cliente}">${c.nombres} ${c.apellidos}</option>`).join('')}
+  `;
 };
 
 let productosPendientes = [], productosComprados = [];
@@ -164,7 +257,7 @@ const llenarFormulario = async event => {
     const { producto } = await apiFetch(
         `/app01_DGCM/productos/buscarProducto?id_producto=${id}`
     );
-    ['id_producto', 'nombre', 'cantidad', 'id_categoria', 'id_prioridad']
+    ['id_producto', 'nombre', 'cantidad', 'id_categoria', 'id_prioridad', 'id_cliente']
         .forEach(f => document.getElementById(f).value = producto[f] ?? '');
 
     btnGuardar.classList.add('d-none');
@@ -172,6 +265,36 @@ const llenarFormulario = async event => {
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
 };
+
+// // Guardar producto
+// const guardarProducto = async e => {
+//     e.preventDefault();
+//     estadoBoton(btnGuardar, true);
+
+//     try {
+//         const formData = new FormData(FormProductos);
+//         const errores = validarDatos(formData);
+
+//         if (errores.length) {
+//             await mostrarAlerta('error', 'Error de validación', errores.join('\n'));
+//             return;
+//         }
+
+//         const { mensaje } = await apiFetch('/app01_DGCM/productos/guardarProducto', {
+//             method: 'POST',
+//             body: formData
+//         });
+
+//         await mostrarAlerta('success', 'Éxito', mensaje);
+//         limpiarFormulario();
+//         await cargarProductos();
+//     } catch (err) {
+//         console.error(err);
+//         await mostrarAlerta('error', 'Error', err.message);
+//     } finally {
+//         estadoBoton(btnGuardar, false);
+//     }
+// };
 
 // Guardar producto
 const guardarProducto = async e => {
@@ -181,6 +304,20 @@ const guardarProducto = async e => {
     try {
         const formData = new FormData(FormProductos);
         const errores = validarDatos(formData);
+
+        const datos = Object.fromEntries(formData);
+        const nombreLower = datos.nombre.trim().toLowerCase();
+        const catId = datos.id_categoria;
+        const cliId = datos.id_cliente;
+
+        if (productosPendientes.some(p =>
+            p.nombre.toLowerCase() === nombreLower &&
+            String(p.id_categoria) === catId &&
+            String(p.id_cliente) === cliId
+        )) {
+            await mostrarAlerta('error', 'Duplicado', 'Ya agregaste este producto en esa categoría para este cliente.');
+            return;
+        }
 
         if (errores.length) {
             await mostrarAlerta('error', 'Error de validación', errores.join('\n'));
@@ -202,6 +339,7 @@ const guardarProducto = async e => {
         estadoBoton(btnGuardar, false);
     }
 };
+
 
 // Modificar producto
 const modificarProducto = async e => {
@@ -329,6 +467,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await Promise.all([
         cargarCategorias(),
         cargarPrioridades(),
+        cargarClientes(),
         cargarProductos()
     ]);
     FormProductos.addEventListener('submit', guardarProducto);

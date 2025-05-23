@@ -59,6 +59,17 @@
                                 </div>
                             </div>
 
+                            <div class="col-md-6">
+                                <label for="id_cliente" class="form-label">Cliente</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-people-fill"></i></span>
+                                    <select class="form-select" id="id_cliente" name="id_cliente" required>
+                                        <option value="">Seleccione un cliente</option>
+                                        <!-- aquí se insertarán las opciones -->
+                                    </select>
+                                </div>
+                            </div>
+
                             <div class="row justify-content-center mt-4 g-2">
                                 <div class="col-auto">
                                     <button class="btn btn-success px-4" type="submit" id="btnGuardar">
@@ -117,7 +128,7 @@
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <div class="table-responsive">
                                 <table class="table table-striped table-hover table-bordered w-100 table-sm"
                                     id="tablaProductos">
@@ -139,5 +150,8 @@
         </div>
     </div>
 </div>
+
+<link rel="stylesheet" href="https://cdn.datatables.net/rowgroup/1.3.1/css/rowGroup.bootstrap5.min.css">
+<script src="https://cdn.datatables.net/rowgroup/1.3.1/js/dataTables.rowGroup.min.js"></script>
 
 <script src="<?= asset('build/js/productos/index.js') ?>"></script>
