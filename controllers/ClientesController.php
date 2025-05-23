@@ -77,12 +77,15 @@ class ClientesController extends AppController
             self::validarMetodo('GET');
             self::limpiarSalida();
 
-            $clientes = Clientes::obtenerTodos();
+            // activas
+            $clientes = Clientes::obtenerActivas();
 
             self::responderJson([
                 'tipo' => 'success',
                 'clientes' => $clientes ?: [],
-                'mensaje' => $clientes ? 'Clientes obtenidos correctamente' : 'No hay clientes registrados'
+                'mensaje' => $clientes
+                    ? 'clientes obtenidos correctamente'
+                    : 'No hay clientes registradao'
             ]);
         } catch (\Exception $e) {
             self::responderJson([
@@ -91,6 +94,7 @@ class ClientesController extends AppController
             ], 500);
         }
     }
+
 
     public static function modificarCliente()
     {

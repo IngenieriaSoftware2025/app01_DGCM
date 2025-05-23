@@ -56,8 +56,10 @@ class Categorias extends ActiveRecord
     public function guardarCategoria()
     {
         try {
-            $errores = $this->validar();
+            error_log("=== DEBUG GUARDAR CATEGORIA ===");
+            error_log("Estado inicial: " . json_encode($this->arrayAtributos()));
 
+            $errores = $this->validar();
             if (!empty($errores)) {
                 return [
                     'exito' => false,
@@ -65,15 +67,19 @@ class Categorias extends ActiveRecord
                 ];
             }
 
+            // Guardar y obtener resultado
             $resultado = $this->id_categoria ? $this->actualizar() : $this->crear();
 
             if (!$resultado) {
                 throw new \Exception('Error en la operación de base de datos');
             }
 
+            // Retornar con los datos actualizados, incluyendo el ID
             return [
                 'exito' => true,
-                'mensaje' => 'Categoría guardada correctamente',
+                'mensaje' => $this->id_categoria ?
+                    'Categoría actualizada correctamente' :
+                    'Categoría guardada correctamente',
                 'categoria' => $this->arrayAtributos()
             ];
         } catch (\Exception $e) {
@@ -85,7 +91,6 @@ class Categorias extends ActiveRecord
             ];
         }
     }
-
     public function eliminarCategoria()
     {
         try {

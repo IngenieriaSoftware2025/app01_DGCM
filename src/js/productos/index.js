@@ -169,6 +169,8 @@ const llenarFormulario = async event => {
 
     btnGuardar.classList.add('d-none');
     btnModificar.classList.remove('d-none');
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
 // Guardar producto

@@ -54,20 +54,30 @@ const reglasEspecificas = {
 const validarDatos = (formData) => {
     const errores = [];
     const datos = Object.fromEntries(formData);
-    console.log('Datos a validar:', datos);
+    
+    // Debug para ver todos los datos del formulario
+    console.log('=== DEBUG VALIDACIÓN ===');
+    console.log('FormData completo:', Array.from(formData.entries()));
+    console.log('Datos convertidos:', datos);
+    console.log('ID Categoria:', datos.id_categoria);
 
+    // Validación de campos obligatorios
     for (const [campo, mensaje] of Object.entries(camposObligatorios)) {
         if (!datos[campo] || datos[campo].trim() === '') {
+            console.log(`Campo ${campo} vacío o inválido`);
             errores.push(mensaje);
         }
     }
 
+    // Validación de reglas específicas
     for (const [campo, regla] of Object.entries(reglasEspecificas)) {
         if (datos[campo] && !regla.evaluar(datos[campo])) {
+            console.log(`Campo ${campo} no cumple reglas específicas`);
             errores.push(regla.msg);
         }
     }
 
+    console.log('Errores encontrados:', errores);
     return errores;
 };
 
@@ -82,6 +92,11 @@ const mostrarAlerta = async (tipo, titulo, mensaje) => {
 
 const limpiarFormulario = () => {
     FormCategorias.reset();
+    // Asegurarnos que el campo hidden se limpia correctamente
+    const idCategoriaInput = document.getElementById('id_categoria');
+    if (idCategoriaInput) {
+        idCategoriaInput.value = '';
+    }
 }
 
 const guardarCategoria = async (e) => {
@@ -90,6 +105,15 @@ const guardarCategoria = async (e) => {
 
     try {
         const formData = new FormData(FormCategorias);
+        
+        // Eliminar id_categoria si está vacío
+        if (!formData.get('id_categoria')) {
+            formData.delete('id_categoria');
+        }
+
+        console.log('=== DEBUG GUARDAR ===');
+        console.log('FormData antes de enviar:', Array.from(formData.entries()));
+
         const errores = validarDatos(formData);
 
         if (errores.length) {
@@ -107,7 +131,7 @@ const guardarCategoria = async (e) => {
         await cargarCategorias();
 
     } catch (err) {
-        console.error(err);
+        console.error('Error en guardarCategoria:', err);
         await mostrarAlerta('error', 'Error', err.message);
     } finally {
         estadoBoton(btnGuardar, false);
@@ -143,10 +167,10 @@ const tablaCategorias = new DataTable('#tablaCategorias', {
 
 const cargarCategorias = async () => {
     try {
-        const { categoria } = await apiFetch('/app01_DGCM/categorias/obtenerCategorias');
-        tablaCategorias.clear().rows.add(categoria).draw();
+        const { categorias } = await apiFetch('/app01_DGCM/categorias/obtenerCategorias');
+        tablaCategorias.clear().rows.add(categorias).draw();
 
-        if (!categoria.length) {
+        if (!categorias.length) {
             await mostrarAlerta('info', 'Información', 'No hay categoria registrados');
         }
 
@@ -172,6 +196,8 @@ const llenarFormulario = async (event) => {
 
         btnGuardar.classList.add('d-none');
         btnModificar.classList.remove('d-none');
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
 
     } catch (err) {
         console.error(err);

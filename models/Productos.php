@@ -13,6 +13,7 @@ class Productos extends ActiveRecord
         'cantidad',
         'id_categoria',
         'id_prioridad',
+        'id_cliente',
         'comprado',
         'situacion'
     ];
@@ -23,12 +24,14 @@ class Productos extends ActiveRecord
     public $cantidad;
     public $id_categoria;
     public $id_prioridad;
+    public $id_cliente;
     public $comprado;
     public $situacion;
 
     // Para relaciones
     public $categoria_nombre;
     public $prioridad_nombre;
+    public $cliente_nombre;
 
     // Errores
     protected static $errores = [];
@@ -48,6 +51,7 @@ class Productos extends ActiveRecord
         // Inicializar campos de relación (si vienen en $args)
         $this->categoria_nombre  = $args['categoria_nombre']  ?? '';
         $this->prioridad_nombre  = $args['prioridad_nombre']  ?? '';
+        $this->cliente_nombre  = $args['cliente_nombre']  ?? '';
     }
 
     public function validar()
@@ -66,6 +70,9 @@ class Productos extends ActiveRecord
         if (empty($this->id_prioridad)) {
             self::$errores[] = 'Debe seleccionar una prioridad';
         }
+        if (empty($this->id_cliente)) {
+            self::$errores[] = 'Debe seleccionar una cliente';
+        }
 
         return self::$errores;
     }
@@ -78,10 +85,12 @@ class Productos extends ActiveRecord
             'cantidad'=> $this->cantidad,
             'id_categoria'=> $this->id_categoria,
             'id_prioridad'=> $this->id_prioridad,
+            'id_cliente'=> $this->id_cliente,
             'comprado'=> $this->comprado,
             'situacion'=> $this->situacion,
             'categoria_nombre'=> $this->categoria_nombre,
-            'prioridad_nombre'=> $this->prioridad_nombre
+            'prioridad_nombre'=> $this->prioridad_nombre,
+            'cliente_nombre'=> $this->cliente_nombre
         ];
     }
 
@@ -150,28 +159,29 @@ class Productos extends ActiveRecord
         return static::all();
     }
 
-    // -----------------------------------
     // Métodos para traer relaciones JOIN
-    // -----------------------------------
 
-    public static function obtenerConRelaciones()
-    {
-        $sql = "
-            SELECT
-                p.*,
-                c.nombre AS categoria_nombre,
-                pr.nombre AS prioridad_nombre
-            FROM productos p
-            JOIN categorias c   ON p.id_categoria  = c.id_categoria
-            JOIN prioridades pr ON p.id_prioridad  = pr.id_prioridad
-            WHERE p.situacion = 1
-        ";
-        $filas = static::consultarSQL($sql);
-        $lista = [];
-        foreach ($filas as $fila) {
-            $lista[] = new self((array)$fila);
-        }
-        return $lista;
+  public static function obtenerConRelaciones()
+{
+    $sql = "
+        SELECT
+            p.*,
+            c.nombre AS categoria_nombre,
+            pr.nombre AS prioridad_nombre,
+            cl.nombres || ' ' || cl.apellidos AS cliente_nombre
+        FROM productos p
+        JOIN categorias c ON p.id_categoria = c.id_categoria
+        JOIN prioridades pr ON p.id_prioridad = pr.id_prioridad
+        JOIN clientes cl ON p.id_cliente = cl.id_cliente 
+        WHERE p.situacion = 1
+    ";
+    $filas = static::consultarSQL($sql);
+    $lista = [];
+    foreach ($filas as $fila) {
+        $lista[] = new self((array)$fila);
     }
+    return $lista;
+}
+
 
 }

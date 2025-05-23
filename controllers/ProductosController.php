@@ -22,10 +22,11 @@ class ProductosController extends AppController
             error_log("POST recibido (producto): " . json_encode($_POST));
 
             $datos = [
-                'nombre'       => $_POST['nombre']       ?? '',
-                'cantidad'     => $_POST['cantidad']     ?? '',
+                'nombre' => $_POST['nombre']       ?? '',
+                'cantidad' => $_POST['cantidad']     ?? '',
                 'id_categoria' => $_POST['id_categoria'] ?? '',
                 'id_prioridad' => $_POST['id_prioridad'] ?? '',
+                'id_cliente'   => $_POST['id_cliente']   ?? '',
             ];
 
             $producto = new Productos($datos);

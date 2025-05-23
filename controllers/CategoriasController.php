@@ -18,32 +18,24 @@ class CategoriasController extends AppController
             self::validarMetodo('POST');
             self::limpiarSalida();
 
-            // Debug
-            error_log("POST recibido: " . json_encode($_POST));
-
-            // Crear categoria con los datos del POST
-            $datos = [
-                'nombre' => $_POST['nombre'] ?? '',
-                'situacion' => 1
-            ];
-
-            $categoria = new Categorias($datos);
+            $categoria = new Categorias($_POST);
             $resultado = $categoria->guardarCategoria();
 
-            // Debug
-            error_log("Resultado guardado: " . json_encode($resultado));
+            if (!$resultado['exito']) {
+                throw new \Exception($resultado['mensaje']);
+            }
 
             self::responderJson([
-                'tipo' => $resultado['exito'] ? 'success' : 'error',
+                'tipo' => 'success',
                 'mensaje' => $resultado['mensaje'],
-                'categoria' => $resultado['exito'] ? $categoria : null
-            ], $resultado['exito'] ? 200 : 400);
+                'categoria' => $resultado['categoria'] 
+            ]);
         } catch (\Exception $e) {
-            error_log("Error en guardarCategoria controller: " . $e->getMessage());
+            error_log("Error en guardarCategoria: " . $e->getMessage());
             self::responderJson([
                 'tipo' => 'error',
-                'mensaje' => 'Error: ' . $e->getMessage()
-            ], 500);
+                'mensaje' => $e->getMessage()
+            ], 400);
         }
     }
 
@@ -78,7 +70,7 @@ class CategoriasController extends AppController
 
             self::responderJson([
                 'tipo' => 'success',
-                'categoria' => $categorias ?: [],
+                'categorias' => $categorias ?: [],
                 'mensaje' => $categorias
                     ? 'Categorias obtenidas correctamente'
                     : 'No hay categorias registradas'

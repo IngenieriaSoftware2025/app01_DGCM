@@ -80,6 +80,12 @@ class Clientes extends ActiveRecord
         ];
     }
 
+    public function toArray(): array
+    {
+        return $this->arrayAtributos();
+    }
+
+
     public function guardarCliente()
     {
         try {
@@ -155,5 +161,16 @@ class Clientes extends ActiveRecord
     public static function obtenerTodos()
     {
         return static::all();
+    }
+
+    public static function obtenerActivas()
+    {
+        $sql   = "SELECT * FROM clientes WHERE situacion = 1";
+        $filas = static::consultarSQL($sql);
+        $lista = [];
+        foreach ($filas as $fila) {
+            $lista[] = new self((array)$fila);
+        }
+        return $lista;
     }
 }

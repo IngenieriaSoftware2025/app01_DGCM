@@ -186,6 +186,8 @@ const llenarFormulario = async (event) => {
         btnGuardar.classList.add('d-none');
         btnModificar.classList.remove('d-none');
 
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
     } catch (err) {
         console.error(err);
         await mostrarAlerta('error', 'Error', err.message);

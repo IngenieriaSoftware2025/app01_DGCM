@@ -13,38 +13,28 @@ class PrioridadesController extends AppController
     }
 
     public static function guardarPrioridad()
-    {
-        try {
-            self::validarMetodo('POST');
-            self::limpiarSalida();
+{
+    self::validarMetodo('POST');
+    self::limpiarSalida();
 
-            // Debug
-            error_log("POST recibido: " . json_encode($_POST));
+    // Armo los datos directamente
+    $datos = [
+        'nombre'    => $_POST['nombre']    ?? '',
+        'situacion' => 1
+    ];
 
-            $datos = [
-                'nombre' => $_POST['nombre'] ?? '',
-                'situacion' => 1
-            ];
+    // Creo el objeto y lo guardo
+    $prioridad = new Prioridades($datos);
+    $resultado  = $prioridad->guardarPrioridad();
 
-            $prioridad = new Prioridades($datos);
-            $resultado = $prioridad->guardarPrioridad();
+    self::responderJson([
+        'tipo'=> $resultado['exito']   ? 'success' : 'error',
+        'mensaje'=> $resultado['mensaje'],
+        'prioridad'=> $resultado['exito']   ? $resultado['prioridad'] : null,
+        'debugError'=> $resultado['error']    ?? null
+    ], $resultado['exito'] ? 200 : 400);
+}
 
-            // Debug
-            error_log("Resultado guardado: " . json_encode($resultado));
-
-            self::responderJson([
-                'tipo' => $resultado['exito'] ? 'success' : 'error',
-                'mensaje' => $resultado['mensaje'],
-                'prioridad' => $resultado['exito'] ? $prioridad : null
-            ], $resultado['exito'] ? 200 : 400);
-        } catch (\Exception $e) {
-            error_log("Error en guardarPrioridad controller: " . $e->getMessage());
-            self::responderJson([
-                'tipo' => 'error',
-                'mensaje' => 'Error: ' . $e->getMessage()
-            ], 500);
-        }
-    }
 
     public static function buscarPrioridad()
     {
