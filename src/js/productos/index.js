@@ -266,36 +266,6 @@ const llenarFormulario = async event => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
-// // Guardar producto
-// const guardarProducto = async e => {
-//     e.preventDefault();
-//     estadoBoton(btnGuardar, true);
-
-//     try {
-//         const formData = new FormData(FormProductos);
-//         const errores = validarDatos(formData);
-
-//         if (errores.length) {
-//             await mostrarAlerta('error', 'Error de validación', errores.join('\n'));
-//             return;
-//         }
-
-//         const { mensaje } = await apiFetch('/app01_DGCM/productos/guardarProducto', {
-//             method: 'POST',
-//             body: formData
-//         });
-
-//         await mostrarAlerta('success', 'Éxito', mensaje);
-//         limpiarFormulario();
-//         await cargarProductos();
-//     } catch (err) {
-//         console.error(err);
-//         await mostrarAlerta('error', 'Error', err.message);
-//     } finally {
-//         estadoBoton(btnGuardar, false);
-//     }
-// };
-
 // Guardar producto
 const guardarProducto = async e => {
     e.preventDefault();

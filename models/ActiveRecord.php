@@ -17,6 +17,9 @@ class ActiveRecord
     // Alertas y Mensajes
     protected static $alertas = [];
 
+    // Errores
+    protected static $errores = [];
+
     // Definir la conexión a la BD - includes/database.php
     public static function setDB($database)
     {
@@ -270,4 +273,123 @@ class ActiveRecord
             }
         }
     }
+
+
+    // A PARTIR DE AQUI LAS FUNCIONES SON MIAS 
+
+
+    protected function attributosConRelaciones()
+    {
+        $atributos = [];
+
+        // Obtener atributos básicos de columnas DB
+        foreach (static::$columnasDB as $columna) {
+            $atributos[$columna] = $this->$columna;
+        }
+
+        // Obtener atributos de relaciones (propiedades que terminan en _nombre)
+        $propiedades = get_object_vars($this);
+        foreach ($propiedades as $prop => $valor) {
+            if (str_ends_with($prop, '_nombre')) {
+                $atributos[$prop] = $valor;
+            }
+        }
+
+        return $atributos;
+    }
+
+    protected function validarDuplicado($campos, $mensajeError = null) 
+{
+    try {
+        // Construir condiciones WHERE
+        $condiciones = [];
+        $valores = [];
+        
+        foreach ($campos as $campo => $valor) {
+            if ($campo === 'nombre') {
+                $condiciones[] = "LOWER($campo) = LOWER(?)";
+            } else {
+                $condiciones[] = "$campo = ?";
+            }
+            $valores[] = $valor;
+        }
+
+        // Agregar condición de situación activa
+        $condiciones[] = "situacion = 1";
+
+        // Si es actualización, excluir el registro actual
+        $id = static::$idTabla;
+        if ($this->$id) {
+            $condiciones[] = "$id <> ?";
+            $valores[] = $this->$id;
+        }
+
+        // Construir y ejecutar consulta
+        $sql = "SELECT COUNT(*) as cnt FROM " . static::$tabla . 
+               " WHERE " . implode(" AND ", $condiciones);
+        
+        $stmt = self::$db->prepare($sql);
+        $stmt->execute($valores);
+        $resultado = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return [
+            'duplicado' => ($resultado['cnt'] > 0),
+            'mensaje' => $mensajeError ?? 'Registro duplicado'
+        ];
+    } catch (\Exception $e) {
+        error_log("Error en validarDuplicado: " . $e->getMessage());
+        return [
+            'duplicado' => false,
+            'mensaje' => 'Error al validar duplicados'
+        ];
+    }
+}
+
+protected function guardarSeguro($validarDuplicados = [], $mensajeError = null) 
+{
+    try {
+        // 1. Validar duplicados si se especifican campos
+        if (!empty($validarDuplicados)) {
+            $resultadoValidacion = $this->validarDuplicado($validarDuplicados, $mensajeError);
+            if ($resultadoValidacion['duplicado']) {
+                return [
+                    'exito' => false,
+                    'mensaje' => $resultadoValidacion['mensaje']
+                ];
+            }
+        }
+
+        // 2. Validar campos requeridos
+        $errores = $this->validar();
+        if (!empty($errores)) {
+            return [
+                'exito' => false,
+                'mensaje' => implode(', ', $errores)
+            ];
+        }
+
+        // 3. Guardar
+        $resultado = $this->guardar();
+        if (!$resultado) {
+            throw new \Exception('Error en la operación de base de datos');
+        }
+
+        // 4. Retornar respuesta exitosa
+         $id = static::$idTabla;
+        return [
+            'exito' => true,
+            'mensaje' => $this->$id ? 
+                'Registro actualizado correctamente' : 
+                'Registro guardado correctamente',
+            'data' => $this->attributosConRelaciones()
+        ];
+
+    } catch (\Exception $e) {
+        error_log("Error en guardarSeguro: " . $e->getMessage());
+        return [
+            'exito' => false,
+            'mensaje' => 'Error al guardar el registro'
+        ];
+    }
+}
 }

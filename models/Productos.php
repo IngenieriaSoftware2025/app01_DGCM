@@ -77,42 +77,73 @@ class Productos extends ActiveRecord
         return self::$errores;
     }
 
-    protected function arrayAtributos()
-    {
-        return [
-            'id_producto' => $this->id_producto,
-            'nombre' => $this->nombre,
-            'cantidad' => $this->cantidad,
-            'id_categoria' => $this->id_categoria,
-            'id_prioridad' => $this->id_prioridad,
-            'id_cliente' => $this->id_cliente,
-            'comprado' => $this->comprado,
-            'situacion' => $this->situacion,
-            'categoria_nombre' => $this->categoria_nombre,
-            'prioridad_nombre' => $this->prioridad_nombre,
-            'cliente_nombre' => $this->cliente_nombre
-        ];
-    }
+    // protected function arrayAtributos()
+    // {
+    //     return [
+    //         'id_producto' => $this->id_producto,
+    //         'nombre' => $this->nombre,
+    //         'cantidad' => $this->cantidad,
+    //         'id_categoria' => $this->id_categoria,
+    //         'id_prioridad' => $this->id_prioridad,
+    //         'id_cliente' => $this->id_cliente,
+    //         'comprado' => $this->comprado,
+    //         'situacion' => $this->situacion,
+    //         'categoria_nombre' => $this->categoria_nombre,
+    //         'prioridad_nombre' => $this->prioridad_nombre,
+    //         'cliente_nombre' => $this->cliente_nombre
+    //     ];
+    // }
 
     public static function toArrayList(array $instancias): array
     {
         return array_map(function (self $p) {
-            return $p->arrayAtributos();
+            return $p->attributosConRelaciones();
         }, $instancias);
     }
+
+    // public static function toArrayList(array $instancias): array
+    // {
+    //     return array_map(function (self $p) {
+    //         return $p->arrayAtributos();
+    //     }, $instancias);
+    // }
 
     // public function guardarProducto()
     // {
     //     try {
+    //         //Validar duplicados
+    //         $sql = sprintf(
+    //             "SELECT COUNT(*) AS cnt 
+    //          FROM productos 
+    //          WHERE LOWER(nombre) = LOWER('%s') 
+    //            AND id_categoria = %d 
+    //            AND id_cliente   = %d 
+    //            AND situacion    = 1
+    //            %s",
+    //             $this->nombre,
+    //             $this->id_categoria,
+    //             $this->id_cliente,
+    //             $this->id_producto
+    //                 ? " AND id_producto <> {$this->id_producto}"
+    //                 : ""
+    //         );
+    //         $first = static::consultarSQL($sql)[0];
+    //         $cnt   = is_object($first)
+    //             ? ($first->cnt  ?? 0)
+    //             : ($first['cnt'] ?? 0);
+
+    //         if ($cnt > 0) {
+    //             return [
+    //                 'exito'   => false,
+    //                 'mensaje' => 'Ya existe ese producto para este cliente y categoría'
+    //             ];
+    //         }
     //         $errores = $this->validar();
     //         if (!empty($errores)) {
     //             return ['exito' => false, 'mensaje' => implode(', ', $errores)];
     //         }
 
-    //         $resultado = $this->id_producto
-    //             ? $this->actualizar()
-    //             : $this->crear();
-
+    //         $resultado = $this->id_producto ? $this->actualizar() : $this->crear();
     //         if (!$resultado) {
     //             throw new \Exception('Error en la operación de base de datos');
     //         }
@@ -120,63 +151,24 @@ class Productos extends ActiveRecord
     //         return [
     //             'exito'    => true,
     //             'mensaje'  => 'Producto guardado correctamente',
-    //             'producto' => $this->arrayAtributos()
+    //             'producto' => $this->attributosConRelaciones()
     //         ];
     //     } catch (\Exception $e) {
     //         error_log("Error en guardarProducto: " . $e->getMessage());
-    //         return ['exito' => false, 'mensaje' => 'Error al guardar el producto', 'error' => $e->getMessage()];
+    //         return ['exito' => false, 'mensaje' => 'Error al guardar el producto'];
     //     }
     // }
 
     public function guardarProducto()
     {
-        try {
-            //Validar duplicados
-            $sql = sprintf(
-                "SELECT COUNT(*) AS cnt 
-             FROM productos 
-             WHERE LOWER(nombre) = LOWER('%s') 
-               AND id_categoria = %d 
-               AND id_cliente   = %d 
-               AND situacion    = 1
-               %s",
-                $this->nombre,
-                $this->id_categoria,
-                $this->id_cliente,
-                $this->id_producto
-                    ? " AND id_producto <> {$this->id_producto}"
-                    : ""
-            );
-            $first = static::consultarSQL($sql)[0];
-            $cnt   = is_object($first)
-                ? ($first->cnt  ?? 0)
-                : ($first['cnt'] ?? 0);
-
-            if ($cnt > 0) {
-                return [
-                    'exito'   => false,
-                    'mensaje' => 'Ya existe ese producto para este cliente y categoría'
-                ];
-            }
-            $errores = $this->validar();
-            if (!empty($errores)) {
-                return ['exito' => false, 'mensaje' => implode(', ', $errores)];
-            }
-
-            $resultado = $this->id_producto ? $this->actualizar() : $this->crear();
-            if (!$resultado) {
-                throw new \Exception('Error en la operación de base de datos');
-            }
-
-            return [
-                'exito'    => true,
-                'mensaje'  => 'Producto guardado correctamente',
-                'producto' => $this->arrayAtributos()
-            ];
-        } catch (\Exception $e) {
-            error_log("Error en guardarProducto: " . $e->getMessage());
-            return ['exito' => false, 'mensaje' => 'Error al guardar el producto'];
-        }
+        return $this->guardarSeguro(
+            [
+                'nombre' => $this->nombre,
+                'id_categoria' => $this->id_categoria,
+                'id_cliente' => $this->id_cliente
+            ],
+            'Ya existe ese producto para este cliente y categoría'
+        );
     }
 
 
